@@ -135,20 +135,31 @@ def bounding_box_process(in_file_path):
     return output_data, bounding_box_set
 # =======================================
 # Write out geojson file
-# edit this one......
-# [[[-180.0,79.1713346],[-180.0,85.0511288],[-135.0,85.0511288],[-135.0,79.1713346]]]},"properties":{"tile":"3-0-0"}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[21.09375,62.915233],[21.09
+# Polygon Format:
+# [ [
+#      [-180.0, 79.1713346],
+#      [-180.0, 85.0511288],
+#      [-135.0, 85.0511288],
+#      [-135.0, 79.1713346]
+#   ]
+# ]
 def geojson_write(level_val, bounding_box_collec, hist, directory_path):
     # declare variables
     json_dic = {}
     feature_list = []
     json_dic['type'] = 'FeatureCollection'
+    
     # add all cells and counts into the feature list
     for index in range(len(hist)):
         tmp_dic = {}
         geometry_dic = {}
         properties_dic = {}
         geometry_dic['type'] = 'Polygon'
-        geometry_dic['coordinates'] = bounding_box_collec[index]
+        geometry_dic['coordinates'] = [[ [bounding_box_collec[index][0],bounding_box_collec[index][1]],
+                                         [bounding_box_collec[index][0],bounding_box_collec[index][3]],
+                                         [bounding_box_collec[index][2],bounding_box_collec[index][3]],
+                                         [bounding_box_collec[index][2],bounding_box_collec[index][1]] ]]
+        #geometry_dic['coordinates'] = bounding_box_collec[index]
         properties_dic['counts'] = hist[index]
         
         tmp_dic['type'] = 'Feature'
