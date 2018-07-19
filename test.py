@@ -104,9 +104,13 @@ def bounding_box_process(in_file_path):
         print('multiple files')
         # loop through all geojson files
         for f in os.listdir(in_file_path):
+            print('File Name:', os.path.join(in_file_path, f))
+            # skip .DS_Store file
+            if f == '.DS_Store':
+                continue
             # load the Geo-json file
-            with open(os.path.join(in_file_path, f)) as f:
-                data = json.load(f)
+            with open(os.path.join(in_file_path, f)) as new_f:
+                data = json.load(new_f)
             # find the minimum and maximum values of the 1st set of coordinates
             bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
             output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
@@ -130,7 +134,9 @@ def bounding_box_process(in_file_path):
     #return data, bounding_box
     return output_data, bounding_box_set
 # =======================================
-# Write out geojson files
+# Write out geojson file
+# edit this one......
+# [[[-180.0,79.1713346],[-180.0,85.0511288],[-135.0,85.0511288],[-135.0,79.1713346]]]},"properties":{"tile":"3-0-0"}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[21.09375,62.915233],[21.09
 def geojson_write(level_val, bounding_box_collec, hist, directory_path):
     # declare variables
     json_dic = {}
