@@ -101,7 +101,7 @@ def bounding_box_process(in_file_path):
             bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
         bounding_box_set.append(bounding_box)
     else:
-        print('multiple files')
+        # Multiple files
         # loop through all geojson files
         for f in os.listdir(in_file_path):
             print('File Name:', os.path.join(in_file_path, f))
@@ -186,6 +186,7 @@ def main():
     file_path = sys.argv[1]
     maximum_level = sys.argv[2]
     #threshold_value = sys.argv[3]
+    folder_path = sys.argv[3]
     
     # find an initial bounding box given all geometries
     final_BB = None
@@ -208,13 +209,13 @@ def main():
     path = 'distribution'
     geojson_path = 'geojson'
     
-    if not os.path.exists(path):
+    if not os.path.exists(os.path.join(folder_path, path)):
         print('Create the distribution directory !!')
-        os.makedirs(path)
+        os.makedirs(os.path.join(folder_path, path))
 
-    if not os.path.exists(geojson_path):
+    if not os.path.exists(os.path.join(folder_path, geojson_path)):
         print('Create the geojson directory !!')
-        os.makedirs(geojson_path)
+        os.makedirs(os.path.join(folder_path, geojson_path))
 
     for count in range(int(maximum_level) + 1):
 
@@ -239,10 +240,10 @@ def main():
 
         # probability distribution
         distribution = probability_distribution(hist)
-        distribution.distribution_computation(count, path)
+        distribution.distribution_computation(count, os.path.join(folder_path, path))
 
         # write out a Geojson file
-        geojson_write(count, bb_collec, hist, geojson_path)
+        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path))
         
 if __name__ == "__main__":
     main()
