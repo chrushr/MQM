@@ -6,5 +6,8 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 Requirement: <br />
 1. numpy
 2. matplotlib
+3. Python3
 
-To run the program, please use the following command:
+To run the program successifully, please follow steps: <br />
+1.
+
