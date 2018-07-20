@@ -71,28 +71,72 @@ def min_max_calculation(geo_type, in_coordinates):
     
     return [tmp_min_X, tmp_min_Y, tmp_max_X, tmp_max_Y]
 # =======================================
+# unwrap complicated geometry types
+def unwrap_func(geometries_list):
+    out_list = []
+    tmp = min_max_calculation(geometries_list[0]['type'], geometries_list[0]['coordinates'])
+    out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
+    # iterates through all elements in "geometries"  it is also a list.
+    for ind2 in range(len(geometries_list)):
+        if ind2 == 0:
+            continue
+        else:
+            tmp2 = min_max_calculation(geometries_list[ind2]['type'], geometries_list[ind2]['coordinates'])
+            out_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates']])
+            # update the bounding box
+            tmp[0] = update_function(tmp[0], tmp2[0], 0)
+            tmp[1] = update_function(tmp[1], tmp2[1], 0)
+            tmp[2] = update_function(tmp[2], tmp2[2], 1)
+            tmp[3] = update_function(tmp[3], tmp2[3], 1)
+    return tmp, out_list
+# =======================================
 # Find min_X, max_X, min_Y, and max_Y given a Geo-json file or multiple files
-def bounding_box_process(in_file_path):
+def bounding_box_process(in_folder_path):
     output_data = []
     bounding_box_set = []
+    bounding_box = None
     
-    ext_output = os.path.splitext(in_file_path)[1]
-    if ext_output is not '':
+    # loop through all geojson files
+    for f in os.listdir(in_folder_path):
+        print('File Name:', os.path.join(in_folder_path, f))
+        # skip .DS_Store file
+        if f == '.DS_Store':
+            continue
         # load the Geo-json file
-        with open(in_file_path) as f:
-            data = json.load(f)
+        with open(os.path.join(in_folder_path, f)) as new_f:
+            data = json.load(new_f)
+        
         # find the minimum and maximum values of the 1st set of coordinates
-        bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
-        output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
+        # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
+        if data['features'][0]['geometry']['type'] == 'GeometryCollection':
+            # iterates through all elements in "geometries" and find the bounding box
+            bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'])
+            # ==============================
+            for element in geometry_collec:
+                output_data.append(element)
+            # ==============================
+        else:
+            bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
+            output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
+        
         # process all geometries excluding the 1st one
         for index in range(len(data['features'])):
             # skip the 1st one
             if index == 0:
                 continue
             # find a bounding box given a set of coordinates
-            tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
-                                                  data['features'][index]['geometry']['coordinates'])
-            output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates']])
+            # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
+            if data['features'][index]['geometry']['type'] == 'GeometryCollection':
+                # iterates through all elements in "geometries" and find the bounding box
+                tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'])
+                # ==============================
+                for element in tmp_geometry_collec:
+                    output_data.append(element)
+                # ==============================
+            else:
+                tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
+                                                      data['features'][index]['geometry']['coordinates'])
+                output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates']])
 
             # update the minimum and maximum values
             bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
@@ -100,38 +144,6 @@ def bounding_box_process(in_file_path):
             bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
             bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
         bounding_box_set.append(bounding_box)
-    else:
-        # Multiple files
-        # loop through all geojson files
-        for f in os.listdir(in_file_path):
-            print('File Name:', os.path.join(in_file_path, f))
-            # skip .DS_Store file
-            if f == '.DS_Store':
-                continue
-            # load the Geo-json file
-            with open(os.path.join(in_file_path, f)) as new_f:
-                data = json.load(new_f)
-            # find the minimum and maximum values of the 1st set of coordinates
-            bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
-            output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
-            # process all geometries excluding the 1st one
-            for index in range(len(data['features'])):
-                # skip the 1st one
-                if index == 0:
-                    continue
-                # find a bounding box given a set of coordinates
-                tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
-                                                  data['features'][index]['geometry']['coordinates'])
-                output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates']])
-
-                # update the minimum and maximum values
-                bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
-                bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
-                bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
-                bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
-            bounding_box_set.append(bounding_box)
-    
-    #return data, bounding_box
     return output_data, bounding_box_set
 # =======================================
 # Write out geojson file
@@ -185,7 +197,6 @@ def cell_size_computation(level_val, bounding_box_collec):
 def main():
     file_path = sys.argv[1]
     maximum_level = sys.argv[2]
-    #threshold_value = sys.argv[3]
     folder_path = sys.argv[3]
     
     # find an initial bounding box given all geometries
@@ -206,11 +217,11 @@ def main():
             final_BB[3] = update_function(final_BB[3], out_BB[index][3], 1)
     
     # loop through different levels
-    path = 'distribution'
+    path = 'histogram'
     geojson_path = 'geojson'
     
     if not os.path.exists(os.path.join(folder_path, path)):
-        print('Create the distribution directory !!')
+        print('Create the histogram directory !!')
         os.makedirs(os.path.join(folder_path, path))
 
     if not os.path.exists(os.path.join(folder_path, geojson_path)):
@@ -247,4 +258,32 @@ def main():
         
 if __name__ == "__main__":
     main()
-    
+
+
+
+    #ext_output = os.path.splitext(in_file_path)[1]
+    #if ext_output is not '':
+#        # load the Geo-json file
+#        with open(in_file_path) as f:
+#            data = json.load(f)
+#        # find the minimum and maximum values of the 1st set of coordinates
+#        bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
+#        output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
+#        # process all geometries excluding the 1st one
+#        for index in range(len(data['features'])):
+#            # skip the 1st one
+#            if index == 0:
+#                continue
+#            # find a bounding box given a set of coordinates
+#            tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
+#                                                  data['features'][index]['geometry']['coordinates'])
+#            output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates']])
+#
+#            # update the minimum and maximum values
+#            bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
+#            bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
+#            bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
+#            bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
+#        bounding_box_set.append(bounding_box)
+#    else:
+
