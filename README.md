@@ -15,5 +15,5 @@ To run the program successifully, please follow steps: <br />
 
 3. run the program through applying "./test_script.sh [name of the arbitrary directory] [a level number]". <br />
 Note: <br />
-Users can adjust the second and last parameter, and minimum value of the level number is 0. <bar />
+Users can adjust the second and last parameter, and minimum value of the level number is 0. <br />
 Value 0 represents that tree depth of a k-d tree is 1. <br />
