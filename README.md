@@ -11,9 +11,9 @@ Requirement: <br />
 To run the program successifully, please follow steps: <br />
 1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
 
-2. change a permission of the **test_script.sh** file by using command `**chmod +x test_script.sh**`. <br />
+2. change a permission of the **test_script.sh** file by using command `chmod +x test_script.sh`. <br />
 
-3. run the program through applying '**./test_script.sh [name of the arbitrary directory] [a level number]**'. <br />
+3. run the program through applying `./test_script.sh [name of the arbitrary directory] [a level number]`. <br />
 
 Note: <br />
 Users can adjust the second and last parameter, and minimum value of the level number is 0. <br />
