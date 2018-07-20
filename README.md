@@ -27,3 +27,6 @@ Users can adjust the second and last parameter, and minimum value of the level n
 Value 0 represents that tree depth of a k-d tree is 1. <br />
 
 **Output Format:** <br />
+
+**Result:** <br />
+The program yields two types of results: histograms and geojson files. 
