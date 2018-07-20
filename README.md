@@ -9,5 +9,7 @@ Requirement: <br />
 3. Python3
 
 To run the program successifully, please follow steps: <br />
-1.
+1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
+
+2. 
 
