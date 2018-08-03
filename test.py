@@ -72,17 +72,31 @@ def min_max_calculation(geo_type, in_coordinates):
     return [tmp_min_X, tmp_min_Y, tmp_max_X, tmp_max_Y]
 # =======================================
 # unwrap complicated geometry types
-def unwrap_func(geometries_list):
+def unwrap_func(geometries_list, ids_list):
     out_list = []
+    # extension calculation
     tmp = min_max_calculation(geometries_list[0]['type'], geometries_list[0]['coordinates'])
-    out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
+
+    #print(geometries_list[0]['type'])
+    #print(len(geometries_list[0]['coordinates']))
+    #print(properties_list)
+    #out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
+
+    # split mixed geometries to multiple individual geometries
+    if geometries_list[0]['type'] == 'MultiLineString':
+        for line_ind in range(len(geometries_list[0]['coordinates'])):
+            out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]])
+            
     # iterates through all elements in "geometries"  it is also a list.
     for ind2 in range(len(geometries_list)):
         if ind2 == 0:
             continue
         else:
             tmp2 = min_max_calculation(geometries_list[ind2]['type'], geometries_list[ind2]['coordinates'])
+            
+            # Not edit yet
             out_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates']])
+            
             # update the bounding box
             tmp[0] = update_function(tmp[0], tmp2[0], 0)
             tmp[1] = update_function(tmp[1], tmp2[1], 0)
@@ -109,8 +123,10 @@ def bounding_box_process(in_folder_path):
         # find the minimum and maximum values of the 1st set of coordinates
         # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
         if data['features'][0]['geometry']['type'] == 'GeometryCollection':
+            print('GeometryCollection')
             # iterates through all elements in "geometries" and find the bounding box
-            bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'])
+            bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
+                                                        data['features'][0]['properties']['feature_osmids'])
             # ==============================
             for element in geometry_collec:
                 output_data.append(element)
@@ -127,8 +143,10 @@ def bounding_box_process(in_folder_path):
             # find a bounding box given a set of coordinates
             # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
             if data['features'][index]['geometry']['type'] == 'GeometryCollection':
+                print('GeometryCollection')
                 # iterates through all elements in "geometries" and find the bounding box
-                tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'])
+                tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
+                                                                    data['features'][index]['properties']['feature_osmids'])
                 # ==============================
                 for element in tmp_geometry_collec:
                     output_data.append(element)
@@ -155,7 +173,7 @@ def bounding_box_process(in_folder_path):
 #      [-135.0, 79.1713346]
 #   ]
 # ]
-def geojson_write(level_val, bounding_box_collec, hist, directory_path):
+def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num):
     # declare variables
     json_dic = {}
     feature_list = []
@@ -183,7 +201,7 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path):
         del properties_dic
     json_dic['features'] = feature_list
     # save the dictionary structure as a Geojson file
-    with open(os.path.join(directory_path, 'level-' + str(level_val) + '.geojson'), 'w') as f:
+    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '.geojson'), 'w') as f:
         json.dump(json_dic, f)
 # =======================================
 # Compute cell size
@@ -251,10 +269,10 @@ def main():
 
         # probability distribution
         distribution = probability_distribution(hist)
-        distribution.distribution_computation(count, os.path.join(folder_path, path))
+        cell_num = distribution.distribution_computation(count, os.path.join(folder_path, path))
 
         # write out a Geojson file
-        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path))
+        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num)
         
 if __name__ == "__main__":
     main()
