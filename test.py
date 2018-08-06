@@ -77,17 +77,31 @@ def unwrap_func(geometries_list, ids_list):
     # extension calculation
     tmp = min_max_calculation(geometries_list[0]['type'], geometries_list[0]['coordinates'])
 
+    #print(ids_list)
+    #print(ids_list[0]['osmid'])
+    #print(ids_list[1]['osmid'])
+    #print(len(ids_list))
+    #print(len(geometries_list[0]['coordinates']))
     #print(geometries_list[0]['type'])
     #print(len(geometries_list[0]['coordinates']))
     #print(properties_list)
     #out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
 
+    # process the first "geometrycollection" feature,
     # split mixed geometries to multiple individual geometries
     if geometries_list[0]['type'] == 'MultiLineString':
         for line_ind in range(len(geometries_list[0]['coordinates'])):
-            out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]])
-            
-    # iterates through all elements in "geometries"  it is also a list.
+            out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]['osmid']])
+                      
+#        if len(ids_list) == 1:
+#            for line_ind in range(len(geometries_list[0]['coordinates'])):
+#                out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[0]])
+#        else:
+#            for line_ind in range(len(geometries_list[0]['coordinates'])):
+#                out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]])
+
+    
+    # iterates through the remaining "geometrycollection" features in "geometries"  it is also a list.
     for ind2 in range(len(geometries_list)):
         if ind2 == 0:
             continue
@@ -102,6 +116,7 @@ def unwrap_func(geometries_list, ids_list):
             tmp[1] = update_function(tmp[1], tmp2[1], 0)
             tmp[2] = update_function(tmp[2], tmp2[2], 1)
             tmp[3] = update_function(tmp[3], tmp2[3], 1)
+            
     return tmp, out_list
 # =======================================
 # Find min_X, max_X, min_Y, and max_Y given a Geo-json file or multiple files
@@ -123,10 +138,9 @@ def bounding_box_process(in_folder_path):
         # find the minimum and maximum values of the 1st set of coordinates
         # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
         if data['features'][0]['geometry']['type'] == 'GeometryCollection':
-            print('GeometryCollection')
             # iterates through all elements in "geometries" and find the bounding box
             bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
-                                                        data['features'][0]['properties']['feature_osmids'])
+                                                        data['features'][0]['properties']['feature_properties'])
             # ==============================
             for element in geometry_collec:
                 output_data.append(element)
@@ -143,10 +157,10 @@ def bounding_box_process(in_folder_path):
             # find a bounding box given a set of coordinates
             # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
             if data['features'][index]['geometry']['type'] == 'GeometryCollection':
-                print('GeometryCollection')
+                #print('GeometryCollection')
                 # iterates through all elements in "geometries" and find the bounding box
                 tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
-                                                                    data['features'][index]['properties']['feature_osmids'])
+                                                                    data['features'][index]['properties']['feature_properties'])
                 # ==============================
                 for element in tmp_geometry_collec:
                     output_data.append(element)
