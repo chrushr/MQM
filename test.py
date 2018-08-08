@@ -73,10 +73,66 @@ def min_max_calculation(geo_type, in_coordinates):
 # =======================================
 # unwrap complicated geometry types
 def unwrap_func(geometries_list, ids_list, flag):
-    out_list = []
+    line_list = []
+    point_list = []
+    
+    # process the first "geometrycollection" feature,
     # extension calculation
+    tmp_storage_list = []
     tmp = min_max_calculation(geometries_list[0]['type'], geometries_list[0]['coordinates'])
+    # split mixed geometries to multiple individual geometries when the type is MultiPoint or MultiLineString
+    if geometries_list[0]['type'] == 'MultiLineString' or geometries_list[0]['type'] == 'MultiPoint':
+        type_name = ''
+        if geometries_list[0]['type'] == 'MultiLineString':
+            type_name = 'LineString'
+        else:
+            type_name = 'Point'
+        for arry_ind in range(len(geometries_list[0]['coordinates'])):
+            tmp_storage_list.append([type_name, geometries_list[0]['coordinates'][arry_ind]])
+    else:  # A point or a line
+        tmp_storage_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
+    # iterates through the remaining "geometrycollection" features in "geometries"  it is also a list.
+    for ind2 in range(len(geometries_list)):
+        if ind2 == 0:
+            continue
+        else:
+            # extension calculation
+            tmp2 = min_max_calculation(geometries_list[ind2]['type'], geometries_list[ind2]['coordinates'])
 
+            if geometries_list[ind2]['type'] == 'MultiLineString' or geometries_list[ind2]['type'] == 'MultiPoint':
+                type_name = ''
+                if geometries_list[ind2]['type'] == 'MultiLineString':
+                    type_name = 'LineString'
+                else:
+                    type_name = 'Point'
+                for arry_ind in range(len(geometries_list[ind2]['coordinates'])):
+                    tmp_storage_list.append([type_name, geometries_list[ind2]['coordinates'][arry_ind]])
+            else:  # A point or a line
+                tmp_storage_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates']])
+            # update the bounding box
+            tmp[0] = update_function(tmp[0], tmp2[0], 0)
+            tmp[1] = update_function(tmp[1], tmp2[1], 0)
+            tmp[2] = update_function(tmp[2], tmp2[2], 1)
+            tmp[3] = update_function(tmp[3], tmp2[3], 1)
+    # record line indexes and indexes of non-empty dics
+    line_record_list = np.zeros(len(ids_list))
+    non_empty_dic = np.zeros(len(ids_list))
+    for record_ind in range(len(ids_list)):
+        if tmp_storage_list[record_ind][0] == 'LineString':
+            line_record_list[record_ind] = 1
+        if len(ids_list[record_ind]) != 0:
+            non_empty_dic[record_ind] = 1
+    # find non-zero indexes from two arrays
+    nonzero_line = np.nonzero(line_record_list)[0]
+    nonzero_dic = np.nonzero(non_empty_dic)[0]
+    point_array =  np.where(line_record_list == 0)[0]
+    # create the line list
+    for elem_ind in range(len(nonzero_line)):
+        line_list.append([tmp_storage_list[nonzero_line[elem_ind]][0], tmp_storage_list[nonzero_line[elem_ind]][1], flag, ids_list[nonzero_dic[elem_ind]]['osmid']])
+    # create the point list
+    for elem_ind in range(len(point_array)):
+        point_list.append([tmp_storage_list[point_array[elem_ind]][0], tmp_storage_list[point_array[elem_ind]][1], flag, -1])
+    
     #print(ids_list)
     #print(ids_list[0]['osmid'])
     #print(ids_list[1]['osmid'])
@@ -86,14 +142,10 @@ def unwrap_func(geometries_list, ids_list, flag):
     #print(len(geometries_list[0]['coordinates']))
     #print(properties_list)
     #out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
-
-    # process the first "geometrycollection" feature,
-    # split mixed geometries to multiple individual geometries
-    if geometries_list[0]['type'] == 'MultiLineString':
-        for line_ind in range(len(geometries_list[0]['coordinates'])):
-            out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], flag, ids_list[line_ind]['osmid']])
+    #for line_ind in range(len(geometries_list[0]['coordinates'])):
+    #out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], flag, ids_list[line_ind]['osmid']])
     
-    return tmp, out_list
+    return tmp, line_list + point_list
 # =======================================
 # Find min_X, max_X, min_Y, and max_Y given a Geo-json file or multiple files
 def bounding_box_process(in_folder_path):
@@ -291,22 +343,6 @@ if __name__ == "__main__":
 #            for line_ind in range(len(geometries_list[0]['coordinates'])):
 #                out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]])
 
-    
-    # iterates through the remaining "geometrycollection" features in "geometries"  it is also a list.
-#    for ind2 in range(len(geometries_list)):
-#        if ind2 == 0:
-#            continue
-#        else:
-#            tmp2 = min_max_calculation(geometries_list[ind2]['type'], geometries_list[ind2]['coordinates'])
-            
-#            # Not edit yet
-#            out_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates']])
-            
-            # update the bounding box
-#            tmp[0] = update_function(tmp[0], tmp2[0], 0)
-#            tmp[1] = update_function(tmp[1], tmp2[1], 0)
-#            tmp[2] = update_function(tmp[2], tmp2[2], 1)
-#            tmp[3] = update_function(tmp[3], tmp2[3], 1)
 
 
     #ext_output = os.path.splitext(in_file_path)[1]
