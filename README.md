@@ -7,6 +7,7 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 1. numpy
 2. matplotlib
 3. Python3
+4. area (link: https://github.com/scisco/area)
 
 **To run the program successifully, please follow steps:** <br />
 1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
