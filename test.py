@@ -159,66 +159,67 @@ def bounding_box_process(in_folder_path):
     # loop through all geojson files
     for f in os.listdir(in_folder_path):
         print('File Name:', os.path.join(in_folder_path, f))
-        # skip .DS_Store file
-        if f == '.DS_Store':
-            continue
-        # load the Geo-json file
-        with open(os.path.join(in_folder_path, f), encoding='utf-8') as new_f:
-            data = json.load(new_f)
-        # randomly generate unique integers
-        end_point = start_point + len(data['features'])
-        int_array = np.arange(start_point, end_point)
-        int_array = np.random.permutation(int_array)
         
-        # find the minimum and maximum values of the 1st set of coordinates
-        # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
-        if data['features'][0]['geometry']['type'] == 'GeometryCollection':
-            # iterates through all elements in "geometries" and find the bounding box
-            bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
-                                                        data['features'][0]['properties']['feature_properties'],
-                                                        int_array[0])
-            # ==============================
-            for element in geometry_collec:
-                output_data.append(element)
-            # ==============================
-        else:
-            bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
-            output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'],
-                                int_array[0], -1])
-        
-        # process all geometries excluding the 1st one
-        for index in range(len(data['features'])):
-            # skip the 1st one
-            if index == 0:
-                continue
-            # find a bounding box given a set of coordinates
+        # load the Geo-json file and ignore other files
+        if os.path.splitext(os.path.join(in_folder_path, f))[1] == '.geojson':
+            # open geojson files
+            with open(os.path.join(in_folder_path, f), encoding='utf-8') as new_f:
+                data = json.load(new_f)
+
+            # randomly generate unique integers
+            end_point = start_point + len(data['features'])
+            int_array = np.arange(start_point, end_point)
+            int_array = np.random.permutation(int_array)
+
+            # find the minimum and maximum values of the 1st set of coordinates
             # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
-            if data['features'][index]['geometry']['type'] == 'GeometryCollection':
-                #print('GeometryCollection')
+            if data['features'][0]['geometry']['type'] == 'GeometryCollection':
                 # iterates through all elements in "geometries" and find the bounding box
-                tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
-                                                                    data['features'][index]['properties']['feature_properties'],
-                                                                    int_array[index])
+                bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
+                                                            data['features'][0]['properties']['feature_properties'],
+                                                            int_array[0])
                 # ==============================
-                for element in tmp_geometry_collec:
+                for element in geometry_collec:
                     output_data.append(element)
                 # ==============================
             else:
-                tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
-                                                      data['features'][index]['geometry']['coordinates'])
-                output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates'],
-                                    int_array[index], -1])
-            
-            # update the minimum and maximum values
-            bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
-            bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
-            bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
-            bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
-        bounding_box_set.append(bounding_box)
+                bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
+                output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'],
+                                    int_array[0], -1])
 
-        # update start point
-        start_point = len(data['features'])
-        
+            # process all geometries excluding the 1st one
+            for index in range(len(data['features'])):
+                # skip the 1st one
+                if index == 0:
+                    continue
+                # find a bounding box given a set of coordinates
+                # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
+                if data['features'][index]['geometry']['type'] == 'GeometryCollection':
+
+                    # iterates through all elements in "geometries" and find the bounding box
+                    tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
+                                                                        data['features'][index]['properties']['feature_properties'],
+                                                                        int_array[index])
+                    # ==============================
+                    for element in tmp_geometry_collec:
+                        output_data.append(element)
+                    # ==============================
+                else:
+                    tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
+                                                          data['features'][index]['geometry']['coordinates'])
+                    output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates'],
+                                        int_array[index], -1])
+
+                # update the minimum and maximum values
+                bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
+                bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
+                bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
+                bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
+            bounding_box_set.append(bounding_box)
+
+            # update start point
+            start_point = len(data['features'])
+    
     return output_data, bounding_box_set
 # =======================================
 # Write out geojson file
