@@ -3,6 +3,7 @@ import numpy as np
 import sys, os
 from kd_tree import kdTree
 from probdist import probability_distribution
+from area import area
 
 def update_function(old_value, new_value, flag):
     if flag == 0:
@@ -158,7 +159,7 @@ def bounding_box_process(in_folder_path):
     
     # loop through all geojson files
     for f in os.listdir(in_folder_path):
-        print('File Name:', os.path.join(in_folder_path, f))
+        #print('File Name:', os.path.join(in_folder_path, f))
         
         # load the Geo-json file and ignore other files
         if os.path.splitext(os.path.join(in_folder_path, f))[1] == '.geojson':
@@ -231,7 +232,7 @@ def bounding_box_process(in_folder_path):
 #      [-135.0, 79.1713346]
 #   ]
 # ]
-def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num):
+def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area):
     # declare variables
     json_dic = {}
     feature_list = []
@@ -258,8 +259,10 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
         del geometry_dic
         del properties_dic
     json_dic['features'] = feature_list
+
+    grid_area = initial_area / (2**(level_val + 1))
     # save the dictionary structure as a Geojson file
-    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '.geojson'), 'w') as f:
+    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '.geojson'), 'w') as f:
         json.dump(json_dic, f)
 # =======================================
 # Compute cell size
@@ -291,6 +294,17 @@ def main():
             final_BB[1] = update_function(final_BB[1], out_BB[index][1], 0)
             final_BB[2] = update_function(final_BB[2], out_BB[index][2], 1)
             final_BB[3] = update_function(final_BB[3], out_BB[index][3], 1)
+
+    # calculate the initial extension area
+    obj = {}
+    obj['type'] = 'Polygon'
+    obj['coordinates'] = [[ [final_BB[0],final_BB[1]],
+                            [final_BB[0],final_BB[3]],
+                            [final_BB[2],final_BB[3]],
+                            [final_BB[2],final_BB[1]] ]]
+    initial_area = area(obj)
+    #print(obj)
+    #print(initial_area)
     
     # loop through different levels
     path = 'histogram'
@@ -305,7 +319,7 @@ def main():
         os.makedirs(os.path.join(folder_path, geojson_path))
 
     for count in range(int(maximum_level) + 1):
-
+        
         # build k-d tree
         tree_cons = kdTree(count, final_BB, entire_data)
         
@@ -330,19 +344,10 @@ def main():
         cell_num = distribution.distribution_computation(count, os.path.join(folder_path, path))
 
         # write out a Geojson file
-        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num)
+        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area)
         
 if __name__ == "__main__":
     main()
-
-
-
-#        if len(ids_list) == 1:
-#            for line_ind in range(len(geometries_list[0]['coordinates'])):
-#                out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[0]])
-#        else:
-#            for line_ind in range(len(geometries_list[0]['coordinates'])):
-#                out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], ids_list[line_ind]])
 
 
 

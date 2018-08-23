@@ -27,7 +27,7 @@ class probability_distribution:
         plt.ylabel('Frequency (# of grids has that counts)')
         fig.savefig(os.path.join(path, 'level-' + str(in_count) + '.png'))
 
-        
+        return len(statistics_result)
         #print(x_axis)
         #print(y_axis)
         #print(self.hist)
