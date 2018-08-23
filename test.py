@@ -261,8 +261,9 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
     json_dic['features'] = feature_list
 
     grid_area = initial_area / (2**(level_val + 1))
+    grid_area = round(grid_area * 1e-6, 2)
     # save the dictionary structure as a Geojson file
-    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '.geojson'), 'w') as f:
+    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '_sq_kms' + '.geojson'), 'w') as f:
         json.dump(json_dic, f)
 # =======================================
 # Compute cell size
