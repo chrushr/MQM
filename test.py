@@ -163,7 +163,7 @@ def bounding_box_process(in_folder_path):
         if f == '.DS_Store':
             continue
         # load the Geo-json file
-        with open(os.path.join(in_folder_path, f), 'rb') as new_f:
+        with open(os.path.join(in_folder_path, f), encoding='utf-8') as new_f:
             data = json.load(new_f)
         # randomly generate unique integers
         end_point = start_point + len(data['features'])
