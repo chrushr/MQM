@@ -16,29 +16,21 @@ class probability_distribution:
         Y - # of cells that has that counts/value (Frequency)
         """
         statistics_result = dict((i, list(self.hist).count(i)) for i in list(self.hist))
+        statistics_result = dict(sorted(statistics_result.items()))
+        
         statistics_result.pop(0, None)
 
         x_axis = list(statistics_result.keys())
 
         fig, ax = plt.subplots()
-        ax.bar(range(len(statistics_result)), list(statistics_result.values()),
-               align='center', tick_label = x_axis)
+        ax.bar(range(len(statistics_result)), list(statistics_result.values()), align='center')
+        plt.xticks((0, len(statistics_result) - 1), (x_axis[0], x_axis[len(statistics_result) - 1]))
         plt.xlabel('Counts (or other measurements)')
         plt.ylabel('Frequency (# of grids has that counts)')
         fig.savefig(os.path.join(path, 'level-' + str(in_count) + '.png'))
 
         return len(statistics_result)
-        #print(x_axis)
-        #print(y_axis)
-        #print(self.hist)
-        #print(statistics_result)
-        #prob_list = counts_array / sum(self.hist)
-        # plot the histogram
-        #x = np.array(list(range(1, len(self.hist) + 1)))
-        
-
-
-
+    
 
 
 
