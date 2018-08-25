@@ -17,10 +17,10 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 3. run the program through applying <br />
 
 ```
-./test_script.sh [name of the arbitrary directory] [a level number]
+./test_script_v2.sh [name of the arbitrary directory] [a level number] [maximum count] [percentage value]
 
 For example:
-./test_script.sh test_data 3
+./test_script.sh test_data 10 10 0.9
 ```
 
 Note: <br />
