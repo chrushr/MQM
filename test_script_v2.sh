@@ -33,7 +33,7 @@ if [ -d "$FOLDER_PATH" ]; then
             mkdir "$PWD/result/$i"
         fi
         
-        python3 test.py "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM $GRID_PERCENT
+        python3 test_v2.py "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM $GRID_PERCENT
     done
 else
     echo "The $1 does not exist !!"
