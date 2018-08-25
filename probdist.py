@@ -17,6 +17,9 @@ class probability_distribution:
         """
         statistics_result = dict((i, list(self.hist).count(i)) for i in list(self.hist))
         statistics_result = dict(sorted(statistics_result.items()))
+        count_0_pair = []
+        if 0 in statistics_result:
+            count_0_pair = [0, statistics_result[0]]
         
         statistics_result.pop(0, None)
 
@@ -29,7 +32,7 @@ class probability_distribution:
         plt.ylabel('Frequency (# of grids has that counts)')
         fig.savefig(os.path.join(path, 'level-' + str(in_count) + '.png'))
 
-        return len(statistics_result)
+        return statistics_result, x_axis, count_0_pair, len(statistics_result)
     
 
 

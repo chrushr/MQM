@@ -278,6 +278,8 @@ def main():
     file_path = sys.argv[1]
     maximum_level = sys.argv[2]
     folder_path = sys.argv[3]
+    count_num = int(sys.argv[4])
+    grid_percent = float(sys.argv[5])
     
     # find an initial bounding box given all geometries
     final_BB = None
@@ -304,8 +306,6 @@ def main():
                             [final_BB[2],final_BB[3]],
                             [final_BB[2],final_BB[1]] ]]
     initial_area = area(obj)
-    #print(obj)
-    #print(initial_area)
     
     # loop through different levels
     path = 'histogram'
@@ -342,10 +342,42 @@ def main():
 
         # probability distribution
         distribution = probability_distribution(hist)
-        cell_num = distribution.distribution_computation(count, os.path.join(folder_path, path))
-
+        out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(count, os.path.join(folder_path, path))
+        
         # write out a Geojson file
         geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area)
+
+        # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
+        if len(count_zero_list) != 0:
+            count_list.insert(0, count_zero_list[0])
+        smallest_max_count = 0
+        smallest_max_count_ind = -1
+        for ind, ele in enumerate(count_list):
+            if ele > count_num:
+                break
+            else:
+                smallest_max_count = ele
+                smallest_max_count_ind = ind
+        
+        if smallest_max_count_ind != -1:
+            total_count_within_count_num = 0
+            total_grids = 0
+            list_length = 0
+            if not count_zero_list:  # the list is empty
+                list_length = smallest_max_count_ind + 1
+                total_grids = cell_num
+            else:
+                list_length = smallest_max_count_ind + 2
+                total_grids = cell_num + count_zero_list[1]
+            
+            for i in range(list_length):
+                if count_list[i] == 0:
+                    total_count_within_count_num += count_zero_list[1]
+                else:
+                    total_count_within_count_num += out_distribution[count_list[i]]
+
+            if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                break
         
 if __name__ == "__main__":
     main()

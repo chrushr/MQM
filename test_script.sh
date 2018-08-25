@@ -7,6 +7,8 @@
 # declare variables
 FOLDER_PATH="$PWD/$1"
 LEVEL=$2
+COUNT_NUM=$3
+GRID_PERCENT=$4
 arrays=()
 
 # determine whether or not the folder exists in the working directory
@@ -31,7 +33,7 @@ if [ -d "$FOLDER_PATH" ]; then
             mkdir "$PWD/result/$i"
         fi
         
-        python3 test.py "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i"
+        python3 test.py "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM $GRID_PERCENT
     done
 else
     echo "The $1 does not exist !!"
