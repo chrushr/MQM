@@ -1,8 +1,8 @@
 import json
 import numpy as np
 import sys, os
-from kd_tree import kdTree
-from probdist import probability_distribution
+from kd_tree_v2 import kdTree
+from probdist_v2 import probability_distribution
 from area import area
 
 def update_function(old_value, new_value, flag):
