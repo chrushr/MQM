@@ -45,11 +45,11 @@ class kdTree:
             return
         
         # process left subtrees
-        node['left'] = self.Get_split(depth_value, left_up_bb)   #(self.RSS_Calculation(left_data))
+        node['left'] = self.Get_split(depth_value, left_up_bb) # get the split rule
         self.build_subtree(node['left'], depth_value + 1, left_up_bb)
         
         # process right subtrees
-        node['right'] = self.Get_split(depth_value, right_down_bb)  #(self.RSS_Calculation(right_data))
+        node['right'] = self.Get_split(depth_value, right_down_bb) # get the split rule
         self.build_subtree(node['right'], depth_value + 1, right_down_bb)
         
     # =====================================
