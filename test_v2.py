@@ -267,10 +267,10 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
         json.dump(json_dic, f)
 # =======================================
 # Compute cell size
-def cell_size_computation(level_val, bounding_box_collec):
-    print('Level ', level_val)
-    print('Cell Width (X length):', bounding_box_collec[0][2] - bounding_box_collec[0][0])
-    print('Cell Height (Y length):', bounding_box_collec[0][3] - bounding_box_collec[0][1])
+def cell_size_computation(depth_val, bounding_box_collec):
+    print('Level ', depth_val)
+    print('Grid size ( Width (X length) x Height (Y length) ): ', (bounding_box_collec[0][2] - bounding_box_collec[0][0]
+          , bounding_box_collec[0][3] - bounding_box_collec[0][1]))
     print('========================')
 # =======================================
 # The main function
@@ -319,34 +319,31 @@ def main():
         print('Create the geojson directory !!')
         os.makedirs(os.path.join(folder_path, geojson_path))
 
-    for count in range(int(maximum_level) + 1):
-        
+    for depth_count in range(1, int(maximum_level) + 1): 
         # build k-d tree
-        tree_cons = kdTree(count, final_BB, entire_data)
-        
-        #out_tree, hist, bb_collec = tree_cons.tree_building()
+        tree_cons = kdTree(depth_count, final_BB, entire_data)
         out_tree = tree_cons.tree_building()
         #print('tree', out_tree)
         
         # get leaves given a K-D tree
         bb_collec = tree_cons.get_leaves(out_tree)
         #print('bounding boxes', bb_collec)
-
+        
         # get counts
         hist = tree_cons.counts_calculation()
         #print('histogram:', hist)
         
         # Cell size computation
-        cell_size_computation(count, bb_collec)
+        cell_size_computation(depth_count, bb_collec)
         del tree_cons
-
+        
         # probability distribution
         distribution = probability_distribution(hist)
-        out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(count, os.path.join(folder_path, path))
+        out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(depth_count, os.path.join(folder_path, path))
         
         # write out a Geojson file
-        geojson_write(count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area)
-
+        geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area)
+        
         # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
         if len(count_zero_list) != 0:
             count_list.insert(0, count_zero_list[0])
@@ -378,7 +375,7 @@ def main():
 
             if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
                 break
-        
+    
 if __name__ == "__main__":
     main()
 

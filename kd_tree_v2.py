@@ -1,31 +1,14 @@
 import numpy as np
 
 class kdTree:
-    def __init__(self, tree_level, bounding_box, data):
+    def __init__(self, tree_depth, bounding_box, data):
         self.root = None
-        self.max_level = tree_level
+        self.max_depth = tree_depth
         self.initial_bb = bounding_box
         self.data = data
         #self.ratio_threshold = threshold_value
         self.histogram = None
         self.bb_collection= []
-    # =====================================
-    # calculate total points and included points given 3-D lists
-#    def dim_3_point_calculation(self, input_bounding_box, in_coordinates):
-#        tmp_total_point = 0
-#        tmp_included_point = 0
-        
-#        # compute the total point and all included points
-#        for index in range(len(in_coordinates)):
-#            tmp_total_point += len(in_coordinates[index])
-#            # calculate included points
-#            for point_ind in range(len(in_coordinates[index])):
-#                if (np.array(in_coordinates[index])[point_ind, :][0] >= input_bounding_box[0] and
-#                    np.array(in_coordinates[index])[point_ind, :][0] < input_bounding_box[2] and
-#                    np.array(in_coordinates[index])[point_ind, :][1] >= input_bounding_box[1] and
-#                    np.array(in_coordinates[index])[point_ind, :][1] < input_bounding_box[3]):
-#                    tmp_included_point += 1
-#        return tmp_total_point, tmp_included_point
     # =====================================
     # get a split rule
     def Get_split(self, level_count, in_bb):
@@ -50,26 +33,25 @@ class kdTree:
         return left_up_BB, right_down_BB
     # =====================================
     # build subtrees
-    def build_subtree(self, node, level_value, input_bb):
+    def build_subtree(self, node, depth_value, input_bb):
         # split the initial bounding box into two bounding boxes
-        left_up_bb, right_down_bb = self.BB_split(node, input_bb, level_value)
+        left_up_bb, right_down_bb = self.BB_split(node, input_bb, depth_value)
         
         # stop conditions
-        if level_value >= self.max_level:
+        if depth_value >= self.max_depth:
             node['left'] = left_up_bb #self.create_terminal_node(left_up_bb)
-            #self.histogram.append(self.create_terminal_node(left_up_bb))
             # ==========================================================
             node['right'] = right_down_bb #self.create_terminal_node(right_down_bb)
-            #self.histogram.append(self.create_terminal_node(right_down_bb))
             return
         
         # process left subtrees
-        node['left'] = self.Get_split(level_value + 1, left_up_bb)   #(self.RSS_Calculation(left_data))
-        self.build_subtree(node['left'], level_value + 1, left_up_bb)
+        node['left'] = self.Get_split(depth_value, left_up_bb)   #(self.RSS_Calculation(left_data))
+        self.build_subtree(node['left'], depth_value + 1, left_up_bb)
         
         # process right subtrees
-        node['right'] = self.Get_split(level_value + 1, right_down_bb)  #(self.RSS_Calculation(right_data))
-        self.build_subtree(node['right'], level_value + 1, right_down_bb)
+        node['right'] = self.Get_split(depth_value, right_down_bb)  #(self.RSS_Calculation(right_data))
+        self.build_subtree(node['right'], depth_value + 1, right_down_bb)
+        
     # =====================================
     # help function
     def help_fun(self, input_tree, level_val):
@@ -156,7 +138,7 @@ class kdTree:
         # get the split point and start with the root
         self.root = self.Get_split(0, self.initial_bb)
         # build the subtree
-        self.build_subtree(self.root, 0, self.initial_bb)
+        self.build_subtree(self.root, 1, self.initial_bb)
         return self.root
 
 
