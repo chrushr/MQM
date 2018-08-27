@@ -12,7 +12,7 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 **To run the program successifully, please follow steps:** <br />
 1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
 
-2. change a permission of the **test_script.sh** file by using command `chmod +x test_script.sh`. <br />
+2. change a permission of the **test_script_v2.sh** file by using command `chmod +x test_script_v2.sh`. <br />
 
 3. run the program through applying <br />
 
