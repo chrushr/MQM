@@ -18,12 +18,13 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 3.1: To use a vanilla k-d tree, please run the following command:
    
 ```
+Command 1:
 ./test_script_v2.sh tree_v1 [name of the arbitrary directory] [maximum depth] [count number] [percentage value]
 
 For example:
 ./test_script_v2.sh tree_v1 test_data 10 10 0.9
 ```
- <br />
+
 3.2: To use a cascade k-d tree, please execute this command:
    
 ```
