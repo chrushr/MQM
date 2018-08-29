@@ -9,7 +9,7 @@ class probability_distribution:
         self.hist = input_histogram
     # =====================================
     # calculate the probability distribution given a histogram
-    def distribution_computation(self, in_count, path):
+    def distribution_computation(self, name):
         # create X-axis and Y-axis in order to plot histograms
         """
         X - Counts (or other measurements)
@@ -30,7 +30,7 @@ class probability_distribution:
         plt.xticks((0, len(statistics_result) - 1), (x_axis[0], x_axis[len(statistics_result) - 1]))
         plt.xlabel('Counts (or other measurements)')
         plt.ylabel('Frequency (# of grids has that counts)')
-        fig.savefig(os.path.join(path, 'level-' + str(in_count) + '.png'))
+        fig.savefig(name)
 
         return statistics_result, x_axis, count_0_pair, len(statistics_result)
     

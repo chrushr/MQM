@@ -4,6 +4,7 @@ import sys, os
 from kd_tree_v2 import kdTree
 from probdist_v2 import probability_distribution
 from area import area
+from unbal_kd_tree import unBalKdTree
 
 def update_function(old_value, new_value, flag):
     if flag == 0:
@@ -232,7 +233,7 @@ def bounding_box_process(in_folder_path):
 #      [-135.0, 79.1713346]
 #   ]
 # ]
-def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area):
+def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area, kd_tree_mode):
     # declare variables
     json_dic = {}
     feature_list = []
@@ -259,12 +260,20 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
         del geometry_dic
         del properties_dic
     json_dic['features'] = feature_list
-
-    grid_area = initial_area / (2**(level_val + 1))
-    grid_area = round(grid_area * 1e-6, 2)
+    
     # save the dictionary structure as a Geojson file
-    with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '_sq_kms' + '.geojson'), 'w') as f:
-        json.dump(json_dic, f)
+    if kd_tree_mode == 'tree_v1':
+        grid_area = initial_area / (2**(level_val + 1))
+        grid_area = round(grid_area * 1e-6, 2)
+    
+        with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '_sq_kms' + '.geojson'), 'w') as f:
+            json.dump(json_dic, f)
+    elif kd_tree_mode == 'tree_v2':
+        with open(os.path.join(directory_path, 'max-depth-' + str(level_val) + '-' + 'cell_num' + str(cell_num) + '.geojson'), 'w') as f:
+            json.dump(json_dic, f)
+    elif kd_tree_mode == 'cascade-kdtree':
+        with open(os.path.join(directory_path, 'first-depth-' + str(level_val) + '.geojson'), 'w') as f:
+            json.dump(json_dic, f)
 # =======================================
 # Compute cell size
 def cell_size_computation(depth_val, bounding_box_collec):
@@ -275,11 +284,14 @@ def cell_size_computation(depth_val, bounding_box_collec):
 # =======================================
 # The main function
 def main():
-    file_path = sys.argv[1]
-    maximum_level = sys.argv[2]
-    folder_path = sys.argv[3]
-    count_num = int(sys.argv[4])
-    grid_percent = float(sys.argv[5])
+    # declare variables
+    kd_tree_mode = sys.argv[1]
+    file_path = sys.argv[2]
+    maximum_level = sys.argv[3]
+    folder_path = sys.argv[4]
+    count_num = int(sys.argv[5])
+    grid_percent = 0.0
+    max_count = 0
     
     # find an initial bounding box given all geometries
     final_BB = None
@@ -319,91 +331,186 @@ def main():
         print('Create the geojson directory !!')
         os.makedirs(os.path.join(folder_path, geojson_path))
 
-    for depth_count in range(1, int(maximum_level) + 1): 
-        # build k-d tree
-        tree_cons = kdTree(depth_count, final_BB, entire_data)
-        out_tree = tree_cons.tree_building()
-        #print('tree', out_tree)
+    # choose the k-d tree model
+    if kd_tree_mode == 'tree_v1':
+        grid_percent = float(sys.argv[6])
         
+        for depth_count in range(1, int(maximum_level) + 1):
+            # build k-d tree
+            tree_cons = kdTree(depth_count, final_BB, entire_data)
+            out_tree = tree_cons.tree_building()
+            print('tree', out_tree)
+
+            # get leaves given a K-D tree
+            bb_collec = tree_cons.get_leaves(out_tree)
+            #print('bounding boxes', bb_collec)
+
+            # get counts
+            hist = tree_cons.counts_calculation()
+            #print('histogram:', hist)
+
+            # Cell size computation
+            cell_size_computation(depth_count, bb_collec)
+            del tree_cons
+
+            # probability distribution
+            distribution = probability_distribution(hist)
+            filename = os.path.join(os.path.join(folder_path, path), 'level-' + str(depth_count) + '.png')
+            out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
+            
+            # write out a Geojson file
+            geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode)
+
+            # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
+            if len(count_zero_list) != 0:
+                count_list.insert(0, count_zero_list[0])
+            smallest_max_count = 0
+            smallest_max_count_ind = -1
+            for ind, ele in enumerate(count_list):
+                if ele > count_num:
+                    break
+                else:
+                    smallest_max_count = ele
+                    smallest_max_count_ind = ind
+
+            if smallest_max_count_ind != -1:
+                total_count_within_count_num = 0
+                total_grids = 0
+                list_length = 0
+                if not count_zero_list:  # the list is empty
+                    list_length = smallest_max_count_ind + 1
+                    total_grids = cell_num
+                else:
+                    list_length = smallest_max_count_ind + 2
+                    total_grids = cell_num + count_zero_list[1]
+
+                for i in range(list_length):
+                    if count_list[i] == 0:
+                        total_count_within_count_num += count_zero_list[1]
+                    else:
+                        total_count_within_count_num += out_distribution[count_list[i]]
+
+                if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    break
+    # ===============================
+    elif kd_tree_mode == 'tree_v2':
+        tree_cons = unBalKdTree(int(count_num), int(maximum_level), final_BB, entire_data)
+        out_tree = tree_cons.tree_building()
+        #print(out_tree)
+
         # get leaves given a K-D tree
         bb_collec = tree_cons.get_leaves(out_tree)
-        #print('bounding boxes', bb_collec)
-        
-        # get counts
-        hist = tree_cons.counts_calculation()
-        #print('histogram:', hist)
-        
-        # Cell size computation
-        cell_size_computation(depth_count, bb_collec)
-        del tree_cons
-        
+
+        # calculate counts
+        hist = tree_cons.get_counts(bb_collec)
+        print('hist', hist)
+
         # probability distribution
         distribution = probability_distribution(hist)
-        out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(depth_count, os.path.join(folder_path, path))
+        filename = os.path.join(os.path.join(folder_path, path), 'max-depth-' + str(maximum_level) + '.png')
+        out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
         
         # write out a Geojson file
-        geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area)
-        
-        # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
-        if len(count_zero_list) != 0:
-            count_list.insert(0, count_zero_list[0])
-        smallest_max_count = 0
-        smallest_max_count_ind = -1
-        for ind, ele in enumerate(count_list):
-            if ele > count_num:
-                break
-            else:
-                smallest_max_count = ele
-                smallest_max_count_ind = ind
-        
-        if smallest_max_count_ind != -1:
-            total_count_within_count_num = 0
-            total_grids = 0
-            list_length = 0
-            if not count_zero_list:  # the list is empty
-                list_length = smallest_max_count_ind + 1
-                total_grids = cell_num
-            else:
-                list_length = smallest_max_count_ind + 2
-                total_grids = cell_num + count_zero_list[1]
-            
-            for i in range(list_length):
-                if count_list[i] == 0:
-                    total_count_within_count_num += count_zero_list[1]
-                else:
-                    total_count_within_count_num += out_distribution[count_list[i]]
+        geojson_write(maximum_level, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode)
+    # ===============================
+    elif kd_tree_mode == 'cascade-kdtree':
+        grid_percent = float(sys.argv[6])
+        max_count = int(sys.argv[7])
+        optimal_count_list = None
+        optimal_grid_size_list = None
+        first_depth = 0
 
-            if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
-                break
-    
+        # determine the best depth using the K-D tree algorithm
+        for depth_count in range(1, int(maximum_level) + 1):
+            # build k-d tree
+            tree_cons = kdTree(depth_count, final_BB, entire_data)
+            out_tree = tree_cons.tree_building()
+            
+            # get leaves and counts for given a K-D tree
+            bb_collec = tree_cons.get_leaves(out_tree)
+            counts_collec= tree_cons.counts_calculation()
+            
+            # probability distribution
+            distribution = probability_distribution(counts_collec)
+            filename = os.path.join(os.path.join(folder_path, path), 'level-' + str(depth_count) + '.png')
+            out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
+            
+            # write out a Geojson file
+            geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode = 'tree_v1')
+
+            # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
+            if len(count_zero_list) != 0:
+                count_list.insert(0, count_zero_list[0])
+            smallest_max_count = 0
+            smallest_max_count_ind = -1
+            for ind, ele in enumerate(count_list):
+                if ele > count_num:
+                    break
+                else:
+                    smallest_max_count = ele
+                    smallest_max_count_ind = ind
+
+            if smallest_max_count_ind != -1:
+                total_count_within_count_num = 0
+                total_grids = 0
+                list_length = 0
+                if not count_zero_list:  # the list is empty
+                    list_length = smallest_max_count_ind + 1
+                    total_grids = cell_num
+                else:
+                    list_length = smallest_max_count_ind + 2
+                    total_grids = cell_num + count_zero_list[1]
+
+                for i in range(list_length):
+                    if count_list[i] == 0:
+                        total_count_within_count_num += count_zero_list[1]
+                    else:
+                        total_count_within_count_num += out_distribution[count_list[i]]
+
+                if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    optimal_grid_size_list = bb_collec
+                    optimal_count_list = tree_cons.counts_calculation()
+                    first_depth = depth_count
+                    break
+        # ======================================        
+        big_grid_list = []
+        big_grid_ind_list = []
+        small_grid_count_list = []
+        # find all grids in which the count is greater the max count
+        for index in range(len(optimal_grid_size_list)):
+            if optimal_count_list[index] > max_count:
+                big_grid_list.append(optimal_grid_size_list[index])
+                big_grid_ind_list.append(index)
+        
+        # refine grids through applying the K-D tree algorithm
+        for extension_ind in range(len(big_grid_list)):
+            for depth_num in range(1, int(maximum_level) + 1):
+                # build k-d tree
+                new_tree_cons = kdTree(depth_num, big_grid_list[extension_ind], entire_data)
+                new_kd_tree = new_tree_cons.tree_building()
+                new_bb_collec = new_tree_cons.get_leaves(new_kd_tree)
+                # get counts
+                new_counts_collec = new_tree_cons.counts_calculation()
+                
+                # stop condition
+                if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
+                    big_grid_list[extension_ind] = new_tree_cons.get_leaves(new_kd_tree)
+                    small_grid_count_list.append(list(new_counts_collec))
+                    break
+        # ======================================
+        # create a new bounding-box collection
+        for ind_val in big_grid_ind_list:
+            optimal_grid_size_list.pop(ind_val)
+        optimal_count_list = np.delete(optimal_count_list, big_grid_ind_list)
+        
+        for inds in range(len(small_grid_count_list)):
+            for inds2 in range(len(big_grid_list[inds])):
+                optimal_grid_size_list.append(big_grid_list[inds][inds2])
+            optimal_count_list = np.append(optimal_count_list, small_grid_count_list[inds])
+        # ======================================
+        # write out a Geojson file
+        geojson_write(first_depth, optimal_grid_size_list, optimal_count_list,
+                      os.path.join(folder_path, geojson_path), None, initial_area, kd_tree_mode)
+        
 if __name__ == "__main__":
     main()
-
-
-
-    #ext_output = os.path.splitext(in_file_path)[1]
-    #if ext_output is not '':
-#        # load the Geo-json file
-#        with open(in_file_path) as f:
-#            data = json.load(f)
-#        # find the minimum and maximum values of the 1st set of coordinates
-#        bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
-#        output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates']])
-#        # process all geometries excluding the 1st one
-#        for index in range(len(data['features'])):
-#            # skip the 1st one
-#            if index == 0:
-#                continue
-#            # find a bounding box given a set of coordinates
-#            tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
-#                                                  data['features'][index]['geometry']['coordinates'])
-#            output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates']])
-#
-#            # update the minimum and maximum values
-#            bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
-#            bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
-#            bounding_box[2] = update_function(bounding_box[2], tmp_bounding_box[2], 1)
-#            bounding_box[3] = update_function(bounding_box[3], tmp_bounding_box[3], 1)
-#        bounding_box_set.append(bounding_box)
-#    else:
-
