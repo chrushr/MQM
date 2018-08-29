@@ -15,7 +15,7 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 2. change a permission of the **test_script_v2.sh** file by using command `chmod +x test_script_v2.sh`. <br />
 
 3. run the program: <br />
-   3.1: To use a vanilla k-d tree, please run the following command: <br />
+3.1: To use a vanilla k-d tree, please run the following command:
    
 ```
 ./test_script_v2.sh tree_v1 [name of the arbitrary directory] [maximum depth] [count number] [percentage value]
@@ -23,6 +23,7 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 For example:
 ./test_script_v2.sh tree_v1 test_data 10 10 0.9
 ```
+
 3.2: To use a cascade k-d tree, please execute this command:
    
 ```
