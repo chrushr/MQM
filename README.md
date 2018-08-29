@@ -14,18 +14,27 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 
 2. change a permission of the **test_script_v2.sh** file by using command `chmod +x test_script_v2.sh`. <br />
 
-3. run the program through applying <br />
-
+3. run the program through applying<br />
+   3.1: To use a vanilla k-d tree, please run the following command:
+   
 ```
-./test_script_v2.sh [name of the arbitrary directory] [a depth number] [maximum count] [percentage value]
+./test_script_v2.sh tree_v1 [name of the arbitrary directory] [maximum depth] [count number] [percentage value]
 
 For example:
-./test_script_v2.sh test_data 10 10 0.9
+./test_script_v2.sh tree_v1 test_data 10 10 0.9
+```
+
+   3.2: To use a cascade k-d tree, please execute this command:
+   
+```
+./test_script_v2.sh cascade-kdtree [name of the arbitrary directory] [maximum depth] [count number (1st k-d tree) ] [percentage value] [maximum count (2nd k-d tree)]
+
+For example:
+./test_script_v2.sh cascade-kdtree test_data 10 10 0.9 100
 ```
 
 Note: <br />
-Users can adjust the second and last parameter, and minimum value of the level number is 0. <br />
-Value 0 represents that tree depth of a k-d tree is 1. <br />
+Users can adjust the second and last parameter, and minimum value of the depth number is 1. <br />
 
 **Output Format:** <br />
 The output format of this program is also a geojson format that includes coordinates of all grids <br />
