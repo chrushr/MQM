@@ -4,7 +4,7 @@ import sys, os
 from kd_tree_v2 import kdTree
 from probdist_v2 import probability_distribution
 from area import area
-from unbal_kd_tree import unBalKdTree
+#from unbal_kd_tree import unBalKdTree
 
 def update_function(old_value, new_value, flag):
     if flag == 0:
