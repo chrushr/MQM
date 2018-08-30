@@ -474,15 +474,15 @@ def main():
                     break
         # ======================================        
         big_grid_list = []
-        big_grid_ind_list = []
-        small_grid_count_list = []
+        new_grids_list = []
+        new_counts_list = []
+        
         # find all grids in which the count is greater the max count
         for index in range(len(optimal_grid_size_list)):
             if optimal_count_list[index] > max_count:
                 big_grid_list.append(optimal_grid_size_list[index])
-                big_grid_ind_list.append(index)
-        
-        # refine grids through applying the K-D tree algorithm
+                #big_grid_ind_list.append(index)
+        # refine big grids through applying the 2nd K-D tree
         for extension_ind in range(len(big_grid_list)):
             for depth_num in range(1, int(maximum_level) + 1):
                 # build k-d tree
@@ -491,26 +491,19 @@ def main():
                 new_bb_collec = new_tree_cons.get_leaves(new_kd_tree)
                 # get counts
                 new_counts_collec = new_tree_cons.counts_calculation()
-                
+
                 # stop condition
                 if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
-                    big_grid_list[extension_ind] = new_tree_cons.get_leaves(new_kd_tree)
-                    small_grid_count_list.append(list(new_counts_collec))
+                    for small_ind in range(len(new_bb_collec)):
+                        new_grids_list.append(new_bb_collec[small_ind])
+                        new_counts_list.append(new_counts_collec[small_ind]) 
                     break
         # ======================================
-        # create a new bounding-box collection
-        for ind_val in big_grid_ind_list:
-            optimal_grid_size_list.pop(ind_val)
-        optimal_count_list = np.delete(optimal_count_list, big_grid_ind_list)
-        
-        for inds in range(len(small_grid_count_list)):
-            for inds2 in range(len(big_grid_list[inds])):
-                optimal_grid_size_list.append(big_grid_list[inds][inds2])
-            optimal_count_list = np.append(optimal_count_list, small_grid_count_list[inds])
-        # ======================================
-        # write out a Geojson file
-        geojson_write(first_depth, optimal_grid_size_list, optimal_count_list,
-                      os.path.join(folder_path, geojson_path), None, initial_area, kd_tree_mode)
+        # write out a Geojson file        
+        geojson_write(first_depth, new_grids_list, new_counts_list,
+                      os.path.join(folder_path, geojson_path), None, None, kd_tree_mode)
+        print('Grid number after the 2nd k-d tree:', len(new_grids_list))
+        print('Count number after the 2nd k-d tree:', len(new_counts_list))
         
 if __name__ == "__main__":
     main()
