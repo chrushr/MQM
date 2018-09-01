@@ -233,7 +233,7 @@ def bounding_box_process(in_folder_path):
 #      [-135.0, 79.1713346]
 #   ]
 # ]
-def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area, kd_tree_mode):
+def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area, kd_tree_mode, flag_val):
     # declare variables
     json_dic = {}
     feature_list = []
@@ -245,12 +245,15 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
         geometry_dic = {}
         properties_dic = {}
         geometry_dic['type'] = 'Polygon'
+        #geometry_dic['coordinates'] = bounding_box_collec[index]
         geometry_dic['coordinates'] = [[ [bounding_box_collec[index][0],bounding_box_collec[index][1]],
                                          [bounding_box_collec[index][0],bounding_box_collec[index][3]],
                                          [bounding_box_collec[index][2],bounding_box_collec[index][3]],
                                          [bounding_box_collec[index][2],bounding_box_collec[index][1]] ]]
-        #geometry_dic['coordinates'] = bounding_box_collec[index]
+        
         properties_dic['counts'] = hist[index]
+        if flag_val:
+            properties_dic['gridId'] = index + 1
         
         tmp_dic['type'] = 'Feature'
         tmp_dic['geometry'] = geometry_dic
@@ -292,6 +295,7 @@ def main():
     count_num = int(sys.argv[5])
     grid_percent = 0.0
     max_count = 0
+    flag_val = False
     
     # find an initial bounding box given all geometries
     final_BB = None
@@ -359,7 +363,7 @@ def main():
             out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
             
             # write out a Geojson file
-            geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode)
+            geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val)
 
             # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
             if len(count_zero_list) != 0:
@@ -391,6 +395,8 @@ def main():
                         total_count_within_count_num += out_distribution[count_list[i]]
 
                 if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    # write out a Geojson file
+                    geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val = True)
                     break
     # ===============================
     elif kd_tree_mode == 'tree_v2':
@@ -411,7 +417,7 @@ def main():
         out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
         
         # write out a Geojson file
-        geojson_write(maximum_level, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode)
+        geojson_write(maximum_level, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val)
     # ===============================
     elif kd_tree_mode == 'cascade-kdtree':
         grid_percent = float(sys.argv[6])
@@ -436,7 +442,7 @@ def main():
             out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
             
             # write out a Geojson file
-            geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode = 'tree_v1')
+            geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode = 'tree_v1', flag_val = False)
 
             # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
             if len(count_zero_list) != 0:
@@ -468,11 +474,15 @@ def main():
                         total_count_within_count_num += out_distribution[count_list[i]]
 
                 if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    # write out a Geojson file
+                    geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area,
+                                  kd_tree_mode = 'tree_v1', flag_val = True)
                     optimal_grid_size_list = bb_collec
                     optimal_count_list = tree_cons.counts_calculation()
                     first_depth = depth_count
                     break
-        # ======================================        
+        # ======================================
+        
         big_grid_list = []
         new_grids_list = []
         new_counts_list = []
@@ -501,7 +511,7 @@ def main():
         # ======================================
         # write out a Geojson file        
         geojson_write(first_depth, new_grids_list, new_counts_list,
-                      os.path.join(folder_path, geojson_path), None, None, kd_tree_mode)
+                      os.path.join(folder_path, geojson_path), None, None, kd_tree_mode, flag_val = True)
         print('Grid number after the 2nd k-d tree:', len(new_grids_list))
         print('Count number after the 2nd k-d tree:', len(new_counts_list))
         
