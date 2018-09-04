@@ -35,7 +35,7 @@ For example:
 ```
 
 Note: <br />
-Users can adjust the second and last parameter, and minimum value of the depth number is 1. <br />
+Users can adjust all parameters for both commands, and minimum value of the depth number is 1. <br />
 
 **Output Format:** <br />
 The output format of this program is also a geojson format that includes coordinates of all grids <br />
