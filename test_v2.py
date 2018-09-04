@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import sys, os
+import sys, os, csv
 from kd_tree_v2 import kdTree
 from probdist_v2 import probability_distribution
 from area import area
@@ -74,13 +74,14 @@ def min_max_calculation(geo_type, in_coordinates):
     return [tmp_min_X, tmp_min_Y, tmp_max_X, tmp_max_Y]
 # =======================================
 # unwrap complicated geometry types
-def unwrap_func(geometries_list, ids_list, flag):
-    line_list = []
-    point_list = []
-    
+def unwrap_func(geometries_list, ids_list, flag, file_name):
+#    line_list = []
+#    point_list = []
+
     # process the first "geometrycollection" feature,
     # extension calculation
     tmp_storage_list = []
+    id_count_index = 0
     tmp = min_max_calculation(geometries_list[0]['type'], geometries_list[0]['coordinates'])
     # split mixed geometries to multiple individual geometries when the type is MultiPoint or MultiLineString
     if geometries_list[0]['type'] == 'MultiLineString' or geometries_list[0]['type'] == 'MultiPoint':
@@ -90,9 +91,15 @@ def unwrap_func(geometries_list, ids_list, flag):
         else:
             type_name = 'Point'
         for arry_ind in range(len(geometries_list[0]['coordinates'])):
-            tmp_storage_list.append([type_name, geometries_list[0]['coordinates'][arry_ind]])
+            if len(ids_list[id_count_index + arry_ind]) != 0:
+                tmp_storage_list.append([type_name, geometries_list[0]['coordinates'][arry_ind], flag, ids_list[id_count_index + arry_ind]['osmid'],
+                                         ids_list[id_count_index + arry_ind]['ItemId'], file_name])
+        id_count_index += len(geometries_list[0]['coordinates'])
     else:  # A point or a line
-        tmp_storage_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
+        if len(ids_list[id_count_index]) != 0:
+            tmp_storage_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates'], flag, ids_list[id_count_index]['osmid'],
+                                     ids_list[id_count_index]['ItemId'], file_name])
+        id_count_index += 1
     # iterates through the remaining "geometrycollection" features in "geometries"  it is also a list.
     for ind2 in range(len(geometries_list)):
         if ind2 == 0:
@@ -108,32 +115,41 @@ def unwrap_func(geometries_list, ids_list, flag):
                 else:
                     type_name = 'Point'
                 for arry_ind in range(len(geometries_list[ind2]['coordinates'])):
-                    tmp_storage_list.append([type_name, geometries_list[ind2]['coordinates'][arry_ind]])
+                    if len(ids_list[id_count_index + arry_ind]) != 0:
+                        tmp_storage_list.append([type_name, geometries_list[ind2]['coordinates'][arry_ind], flag,
+                                                 ids_list[id_count_index + arry_ind]['osmid'], ids_list[id_count_index + arry_ind]['ItemId'],
+                                                 file_name])
+                id_count_index += len(geometries_list[ind2]['coordinates'])
             else:  # A point or a line
-                tmp_storage_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates']])
+                if len(ids_list[id_count_index]) != 0:
+                    tmp_storage_list.append([geometries_list[ind2]['type'], geometries_list[ind2]['coordinates'], flag,
+                                             ids_list[id_count_index]['osmid'], ids_list[id_count_index]['ItemId'], file_name])
+                id_count_index += 1
             # update the bounding box
             tmp[0] = update_function(tmp[0], tmp2[0], 0)
             tmp[1] = update_function(tmp[1], tmp2[1], 0)
             tmp[2] = update_function(tmp[2], tmp2[2], 1)
             tmp[3] = update_function(tmp[3], tmp2[3], 1)
+    # =================================================
     # record line indexes and indexes of non-empty dics
-    line_record_list = np.zeros(len(ids_list))
-    non_empty_dic = np.zeros(len(ids_list))
-    for record_ind in range(len(ids_list)):
-        if tmp_storage_list[record_ind][0] == 'LineString':
-            line_record_list[record_ind] = 1
-        if len(ids_list[record_ind]) != 0:
-            non_empty_dic[record_ind] = 1
+#    line_record_list = np.zeros(len(ids_list))
+#    non_empty_dic = np.zeros(len(ids_list))
+    #for record_ind in range(len(ids_list)):
+#        if tmp_storage_list[record_ind][0] == 'LineString':
+#            line_record_list[record_ind] = 1
+#        if len(ids_list[record_ind]) != 0:
+#            non_empty_dic[record_ind] = 1
     # find non-zero indexes from two arrays
-    nonzero_line = np.nonzero(line_record_list)[0]
-    nonzero_dic = np.nonzero(non_empty_dic)[0]
-    point_array =  np.where(line_record_list == 0)[0]
+#    nonzero_line = np.nonzero(line_record_list)[0]
+#    nonzero_dic = np.nonzero(non_empty_dic)[0]
+#    point_array =  np.where(line_record_list == 0)[0]
     # create the line list
-    for elem_ind in range(len(nonzero_line)):
-        line_list.append([tmp_storage_list[nonzero_line[elem_ind]][0], tmp_storage_list[nonzero_line[elem_ind]][1], flag, ids_list[nonzero_dic[elem_ind]]['osmid']])
+#    for elem_ind in range(len(nonzero_line)):
+#        line_list.append([tmp_storage_list[nonzero_line[elem_ind]][0], tmp_storage_list[nonzero_line[elem_ind]][1], flag, ids_list[nonzero_dic[elem_ind]]['osmid']])
     # create the point list
-    for elem_ind in range(len(point_array)):
-        point_list.append([tmp_storage_list[point_array[elem_ind]][0], tmp_storage_list[point_array[elem_ind]][1], flag, -1])
+#    for elem_ind in range(len(point_array)):
+#        point_list.append([tmp_storage_list[point_array[elem_ind]][0], tmp_storage_list[point_array[elem_ind]][1], flag, -1])
+
     
     #print(ids_list)
     #print(ids_list[0]['osmid'])
@@ -147,7 +163,8 @@ def unwrap_func(geometries_list, ids_list, flag):
     #for line_ind in range(len(geometries_list[0]['coordinates'])):
     #out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], flag, ids_list[line_ind]['osmid']])
     
-    return tmp, line_list + point_list
+#    return tmp, line_list + point_list
+    return tmp, tmp_storage_list
 # =======================================
 # Find min_X, max_X, min_Y, and max_Y given a Geo-json file or multiple files
 def bounding_box_process(in_folder_path):
@@ -168,7 +185,7 @@ def bounding_box_process(in_folder_path):
             with open(os.path.join(in_folder_path, f), encoding='utf-8') as new_f:
                 data = json.load(new_f)
 
-            # randomly generate unique integers
+            # randomly generate unique integers (flag ids)
             end_point = start_point + len(data['features'])
             int_array = np.arange(start_point, end_point)
             int_array = np.random.permutation(int_array)
@@ -179,15 +196,19 @@ def bounding_box_process(in_folder_path):
                 # iterates through all elements in "geometries" and find the bounding box
                 bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
                                                             data['features'][0]['properties']['feature_properties'],
-                                                            int_array[0])
+                                                            int_array[0], f)
                 # ==============================
-                for element in geometry_collec:
-                    output_data.append(element)
+                #for element in geometry_collec:
+                #    output_data.append(element)
+                output_data = output_data + geometry_collec
                 # ==============================
             else:
-                bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
-                output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'],
-                                    int_array[0], -1])
+                # discard a feature without its feature property
+                if len(data['features'][0]['properties']['feature_properties']) != 0:
+                    bounding_box = min_max_calculation(data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'])
+                    output_data.append([data['features'][0]['geometry']['type'], data['features'][0]['geometry']['coordinates'],
+                                        int_array[0], data['features'][0]['properties']['feature_properties'][0]['osmid'],
+                                        data['features'][0]['properties']['feature_properties'][0]['ItemId'], f])
 
             # process all geometries excluding the 1st one
             for index in range(len(data['features'])):
@@ -201,17 +222,20 @@ def bounding_box_process(in_folder_path):
                     # iterates through all elements in "geometries" and find the bounding box
                     tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
                                                                         data['features'][index]['properties']['feature_properties'],
-                                                                        int_array[index])
+                                                                        int_array[index], f)
                     # ==============================
-                    for element in tmp_geometry_collec:
-                        output_data.append(element)
+                    #for element in tmp_geometry_collec:
+                    #    output_data.append(element)
+                    output_data = output_data + tmp_geometry_collec
                     # ==============================
                 else:
-                    tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
-                                                          data['features'][index]['geometry']['coordinates'])
-                    output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates'],
-                                        int_array[index], -1])
-
+                    # discard a feature without its feature property
+                    if len(data['features'][index]['properties']['feature_properties']) != 0:
+                        tmp_bounding_box= min_max_calculation(data['features'][index]['geometry']['type'],
+                                                              data['features'][index]['geometry']['coordinates'])
+                        output_data.append([data['features'][index]['geometry']['type'], data['features'][index]['geometry']['coordinates'],
+                                            int_array[index], data['features'][index]['properties']['feature_properties'][0]['osmid'],
+                                            data['features'][index]['properties']['feature_properties'][0]['ItemId'], f])
                 # update the minimum and maximum values
                 bounding_box[0] = update_function(bounding_box[0], tmp_bounding_box[0], 0)
                 bounding_box[1] = update_function(bounding_box[1], tmp_bounding_box[1], 0)
@@ -233,7 +257,7 @@ def bounding_box_process(in_folder_path):
 #      [-135.0, 79.1713346]
 #   ]
 # ]
-def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area, kd_tree_mode, flag_val):
+def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num, initial_area, in_grid_ids, kd_tree_mode, flag_val):
     # declare variables
     json_dic = {}
     feature_list = []
@@ -253,7 +277,10 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
         
         properties_dic['counts'] = hist[index]
         if flag_val:
-            properties_dic['gridId'] = index + 1
+            if in_grid_ids is None:
+                properties_dic['gridId'] = index + 1
+            else:
+                properties_dic['gridId'] = in_grid_ids[index]
         
         tmp_dic['type'] = 'Feature'
         tmp_dic['geometry'] = geometry_dic
@@ -266,7 +293,8 @@ def geojson_write(level_val, bounding_box_collec, hist, directory_path, cell_num
     
     # save the dictionary structure as a Geojson file
     if kd_tree_mode == 'tree_v1':
-        grid_area = initial_area / (2**(level_val + 1))
+        #grid_area = initial_area / (2**(level_val + 1))
+        grid_area = initial_area / (2**(level_val))
         grid_area = round(grid_area * 1e-6, 2)
     
         with open(os.path.join(directory_path, 'level-' + str(level_val) + '-' + str(cell_num) + '_area_' + str(grid_area) + '_sq_kms' + '.geojson'), 'w') as f:
@@ -284,6 +312,41 @@ def cell_size_computation(depth_val, bounding_box_collec):
     print('Grid size ( Width (X length) x Height (Y length) ): ', (bounding_box_collec[0][2] - bounding_box_collec[0][0]
           , bounding_box_collec[0][3] - bounding_box_collec[0][1]))
     print('========================')
+# =======================================
+# Create a table and save it as a csv file
+def csv_file_write(in_data, in_grid_collec_list, in_path, area_list):
+    out_list = []
+    if len(in_grid_collec_list) == 1:
+        for index in range(len(in_data)):
+            if in_data[index][0] == 'Point' and in_data[index][4] in in_grid_collec_list[0]:
+                out_list.append([in_grid_collec_list[0][in_data[index][4]], in_data[index][4],
+                                  in_data[index][3], in_data[index][2], in_data[index][5], area_list[0]
+                                  ])
+            elif in_data[index][0] == 'LineString' and in_data[index][4] in in_grid_collec_list[0]:
+                #print ('Error:', in_grid_collec_list[0][in_data[index][4]])
+                #print ('item id:', in_data[index][4])
+                #print('type', in_data[index][0])
+                if in_data[index][0] == 'LineString' and type(in_grid_collec_list[0][in_data[index][4]]) is int:
+                    in_grid_collec_list[0][in_data[index][4]] = [in_grid_collec_list[0][in_data[index][4]]]
+                for elem_id in in_grid_collec_list[0][in_data[index][4]]:
+                    out_list.append([elem_id, in_data[index][4], in_data[index][3], in_data[index][2], in_data[index][5], area_list[0]])
+    else:
+        for index in range(len(in_data)):
+            # iterate through all grid-id dictionaries
+            for dic_index in range(len(in_grid_collec_list)):
+                if in_data[index][0] == 'Point' and in_data[index][4] in in_grid_collec_list[dic_index]:
+                    out_list.append([in_grid_collec_list[dic_index][in_data[index][4]], in_data[index][4],
+                                     in_data[index][3], in_data[index][2], in_data[index][5], area_list[dic_index]
+                                     ])
+                elif in_data[index][0] == 'LineString' and in_data[index][4] in in_grid_collec_list[dic_index]:
+                    if in_data[index][0] == 'LineString' and type(in_grid_collec_list[dic_index][in_data[index][4]]) is int:
+                        in_grid_collec_list[dic_index][in_data[index][4]] = [in_grid_collec_list[dic_index][in_data[index][4]]]
+                    for elem_id in in_grid_collec_list[dic_index][in_data[index][4]]:
+                        out_list.append([elem_id, in_data[index][4], in_data[index][3], in_data[index][2], in_data[index][5], area_list[dic_index]])
+    # save the 2d list as a file
+    with open(in_path, "w") as out_f:
+        writer = csv.writer(out_f)
+        writer.writerows(out_list)
 # =======================================
 # The main function
 def main():
@@ -341,18 +404,18 @@ def main():
         
         for depth_count in range(1, int(maximum_level) + 1):
             # build k-d tree
-            tree_cons = kdTree(depth_count, final_BB, entire_data)
+            tree_cons = kdTree(depth_count, final_BB, entire_data, 1)
             out_tree = tree_cons.tree_building()
-            print('tree', out_tree)
-
+            #print('tree', out_tree)
+            
             # get leaves given a K-D tree
             bb_collec = tree_cons.get_leaves(out_tree)
             #print('bounding boxes', bb_collec)
 
             # get counts
-            hist = tree_cons.counts_calculation()
+            hist, gridid_collec= tree_cons.counts_calculation()
             #print('histogram:', hist)
-
+            
             # Cell size computation
             cell_size_computation(depth_count, bb_collec)
             del tree_cons
@@ -363,7 +426,7 @@ def main():
             out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
             
             # write out a Geojson file
-            geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val)
+            geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, None, kd_tree_mode, flag_val)
 
             # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
             if len(count_zero_list) != 0:
@@ -395,8 +458,16 @@ def main():
                         total_count_within_count_num += out_distribution[count_list[i]]
 
                 if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    # calculate areas
+                    grid_area = initial_area / (2**(depth_count))
+                    grid_area = round(grid_area * 1e-6, 2)
+                    # write out a csv file
+                    file_path = os.path.join(folder_path, 'tree_1-log.csv')
+                    #print(gridid_collec)
+                    csv_file_write(entire_data, [gridid_collec], file_path, [grid_area])
                     # write out a Geojson file
-                    geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val = True)
+                    geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area,
+                                  None, kd_tree_mode, flag_val = True)
                     break
     # ===============================
     elif kd_tree_mode == 'tree_v2':
@@ -409,7 +480,7 @@ def main():
 
         # calculate counts
         hist = tree_cons.get_counts(bb_collec)
-        print('hist', hist)
+        #print('hist', hist)
 
         # probability distribution
         distribution = probability_distribution(hist)
@@ -425,16 +496,17 @@ def main():
         optimal_count_list = None
         optimal_grid_size_list = None
         first_depth = 0
+        big_initial_area = 0.0
 
         # determine the best depth using the K-D tree algorithm
         for depth_count in range(1, int(maximum_level) + 1):
             # build k-d tree
-            tree_cons = kdTree(depth_count, final_BB, entire_data)
+            tree_cons = kdTree(depth_count, final_BB, entire_data, 1)
             out_tree = tree_cons.tree_building()
             
             # get leaves and counts for given a K-D tree
             bb_collec = tree_cons.get_leaves(out_tree)
-            counts_collec= tree_cons.counts_calculation()
+            counts_collec, gridid_collec = tree_cons.counts_calculation()
             
             # probability distribution
             distribution = probability_distribution(counts_collec)
@@ -442,7 +514,8 @@ def main():
             out_distribution, count_list, count_zero_list, cell_num = distribution.distribution_computation(filename)
             
             # write out a Geojson file
-            geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode = 'tree_v1', flag_val = False)
+            geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path),
+                          cell_num, initial_area, None, kd_tree_mode = 'tree_v1', flag_val = False)
 
             # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
             if len(count_zero_list) != 0:
@@ -474,11 +547,19 @@ def main():
                         total_count_within_count_num += out_distribution[count_list[i]]
 
                 if (float(total_count_within_count_num) / float(total_grids)) > grid_percent:
+                    # calculate areas
+                    grid_area = initial_area / (2**(depth_count))
+                    grid_area = round(grid_area * 1e-6, 2)
+                    big_initial_area = grid_area
+                    # write out a csv file
+                    file_path = os.path.join(folder_path, 'tree_1-log.csv' )
+                    csv_file_write(entire_data, [gridid_collec], file_path, [grid_area])
                     # write out a Geojson file
                     geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area,
-                                  kd_tree_mode = 'tree_v1', flag_val = True)
+                                  None, kd_tree_mode = 'tree_v1', flag_val = True)
                     optimal_grid_size_list = bb_collec
-                    optimal_count_list = tree_cons.counts_calculation()
+
+                    optimal_count_list = counts_collec
                     first_depth = depth_count
                     break
         # ======================================
@@ -486,7 +567,10 @@ def main():
         big_grid_list = []
         new_grids_list = []
         new_counts_list = []
-        
+        new_area_list = []
+        new_grid_id_list = []
+        grid_ids = []
+        gridid_start = 1
         # find all grids in which the count is greater the max count
         for index in range(len(optimal_grid_size_list)):
             if optimal_count_list[index] > max_count:
@@ -496,24 +580,35 @@ def main():
         for extension_ind in range(len(big_grid_list)):
             for depth_num in range(1, int(maximum_level) + 1):
                 # build k-d tree
-                new_tree_cons = kdTree(depth_num, big_grid_list[extension_ind], entire_data)
+                new_tree_cons = kdTree(depth_num, big_grid_list[extension_ind], entire_data, gridid_start)
                 new_kd_tree = new_tree_cons.tree_building()
                 new_bb_collec = new_tree_cons.get_leaves(new_kd_tree)
                 # get counts
-                new_counts_collec = new_tree_cons.counts_calculation()
-
+                new_counts_collec, new_grid_id_collec = new_tree_cons.counts_calculation()
+                new_grid_id_list.append(new_grid_id_collec)
+                # calculate areas
+                new_area = big_initial_area / (2** depth_num)
+                new_area_list.append(new_area)
+                
+                # update the start point of the grid id
+                gridid_start += len(new_bb_collec)
+                
                 # stop condition
                 if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
                     for small_ind in range(len(new_bb_collec)):
+                        grid_ids.append(gridid_start + small_ind)
                         new_grids_list.append(new_bb_collec[small_ind])
                         new_counts_list.append(new_counts_collec[small_ind]) 
                     break
         # ======================================
-        # write out a Geojson file        
+        # write out a csv file
+        file_path_tree_2 = os.path.join(folder_path, 'tree_2-log.csv' )
+        csv_file_write(entire_data, new_grid_id_list, file_path_tree_2, new_area_list)
+        
+        # write out a Geojson file
         geojson_write(first_depth, new_grids_list, new_counts_list,
-                      os.path.join(folder_path, geojson_path), None, None, kd_tree_mode, flag_val = True)
+                      os.path.join(folder_path, geojson_path), None, None, grid_ids, kd_tree_mode, flag_val = True)
         print('Grid number after the 2nd k-d tree:', len(new_grids_list))
         print('Count number after the 2nd k-d tree:', len(new_counts_list))
-        
 if __name__ == "__main__":
     main()
