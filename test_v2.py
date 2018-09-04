@@ -318,30 +318,23 @@ def csv_file_write(in_data, in_grid_collec_list, in_path, area_list):
     out_list = []
     if len(in_grid_collec_list) == 1:
         for index in range(len(in_data)):
-            if in_data[index][0] == 'Point' and in_data[index][4] in in_grid_collec_list[0]:
-                out_list.append([in_grid_collec_list[0][in_data[index][4]], in_data[index][4],
+            if in_data[index][0] == 'Point' and in_data[index][4] + '-' + in_data[index][0] in in_grid_collec_list[0]:
+                out_list.append([in_grid_collec_list[0][    in_data[index][4] + '-' + in_data[index][0] ], in_data[index][4],
                                   in_data[index][3], in_data[index][2], in_data[index][5], area_list[0]
                                   ])
-            elif in_data[index][0] == 'LineString' and in_data[index][4] in in_grid_collec_list[0]:
-                #print ('Error:', in_grid_collec_list[0][in_data[index][4]])
-                #print ('item id:', in_data[index][4])
-                #print('type', in_data[index][0])
-                if in_data[index][0] == 'LineString' and type(in_grid_collec_list[0][in_data[index][4]]) is int:
-                    in_grid_collec_list[0][in_data[index][4]] = [in_grid_collec_list[0][in_data[index][4]]]
-                for elem_id in in_grid_collec_list[0][in_data[index][4]]:
+            elif in_data[index][0] == 'LineString' and in_data[index][4] + '-' + in_data[index][0] in in_grid_collec_list[0]:
+                for elem_id in in_grid_collec_list[0][in_data[index][4] + '-' + in_data[index][0] ]:
                     out_list.append([elem_id, in_data[index][4], in_data[index][3], in_data[index][2], in_data[index][5], area_list[0]])
     else:
         for index in range(len(in_data)):
             # iterate through all grid-id dictionaries
             for dic_index in range(len(in_grid_collec_list)):
-                if in_data[index][0] == 'Point' and in_data[index][4] in in_grid_collec_list[dic_index]:
-                    out_list.append([in_grid_collec_list[dic_index][in_data[index][4]], in_data[index][4],
+                if in_data[index][0] == 'Point' and in_data[index][4] + '-' + in_data[index][0] in in_grid_collec_list[dic_index]:
+                    out_list.append([in_grid_collec_list[dic_index][in_data[index][4] + '-' + in_data[index][0] ], in_data[index][4],
                                      in_data[index][3], in_data[index][2], in_data[index][5], area_list[dic_index]
                                      ])
-                elif in_data[index][0] == 'LineString' and in_data[index][4] in in_grid_collec_list[dic_index]:
-                    if in_data[index][0] == 'LineString' and type(in_grid_collec_list[dic_index][in_data[index][4]]) is int:
-                        in_grid_collec_list[dic_index][in_data[index][4]] = [in_grid_collec_list[dic_index][in_data[index][4]]]
-                    for elem_id in in_grid_collec_list[dic_index][in_data[index][4]]:
+                elif in_data[index][0] == 'LineString' and in_data[index][4] + '-' + in_data[index][0] in in_grid_collec_list[dic_index]:
+                    for elem_id in in_grid_collec_list[dic_index][in_data[index][4] + '-' + in_data[index][0] ]:
                         out_list.append([elem_id, in_data[index][4], in_data[index][3], in_data[index][2], in_data[index][5], area_list[dic_index]])
     # save the 2d list as a file
     with open(in_path, "w") as out_f:
@@ -576,39 +569,40 @@ def main():
             if optimal_count_list[index] > max_count:
                 big_grid_list.append(optimal_grid_size_list[index])
                 #big_grid_ind_list.append(index)
-        # refine big grids through applying the 2nd K-D tree
-        for extension_ind in range(len(big_grid_list)):
-            for depth_num in range(1, int(maximum_level) + 1):
-                # build k-d tree
-                new_tree_cons = kdTree(depth_num, big_grid_list[extension_ind], entire_data, gridid_start)
-                new_kd_tree = new_tree_cons.tree_building()
-                new_bb_collec = new_tree_cons.get_leaves(new_kd_tree)
-                # get counts
-                new_counts_collec, new_grid_id_collec = new_tree_cons.counts_calculation()
-                new_grid_id_list.append(new_grid_id_collec)
-                # calculate areas
-                new_area = big_initial_area / (2** depth_num)
-                new_area_list.append(new_area)
-                
-                # update the start point of the grid id
-                gridid_start += len(new_bb_collec)
-                
-                # stop condition
-                if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
-                    for small_ind in range(len(new_bb_collec)):
-                        grid_ids.append(gridid_start + small_ind)
-                        new_grids_list.append(new_bb_collec[small_ind])
-                        new_counts_list.append(new_counts_collec[small_ind]) 
-                    break
-        # ======================================
-        # write out a csv file
-        file_path_tree_2 = os.path.join(folder_path, 'tree_2-log.csv' )
-        csv_file_write(entire_data, new_grid_id_list, file_path_tree_2, new_area_list)
+        if len(big_grid_list) != 0:
+            # refine big grids through applying the 2nd K-D tree
+            for extension_ind in range(len(big_grid_list)):
+                for depth_num in range(1, int(maximum_level) + 1):
+                    # build k-d tree
+                    new_tree_cons = kdTree(depth_num, big_grid_list[extension_ind], entire_data, gridid_start)
+                    new_kd_tree = new_tree_cons.tree_building()
+                    new_bb_collec = new_tree_cons.get_leaves(new_kd_tree)
+                    # get counts
+                    new_counts_collec, new_grid_id_collec = new_tree_cons.counts_calculation()
+                    new_grid_id_list.append(new_grid_id_collec)
+                    # calculate areas
+                    new_area = big_initial_area / (2** depth_num)
+                    new_area_list.append(new_area)
+
+                    # update the start point of the grid id
+                    gridid_start += len(new_bb_collec)
+
+                    # stop condition
+                    if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
+                        for small_ind in range(len(new_bb_collec)):
+                            grid_ids.append(gridid_start + small_ind)
+                            new_grids_list.append(new_bb_collec[small_ind])
+                            new_counts_list.append(new_counts_collec[small_ind])
+                        break
+            # ======================================
+            # write out a csv file
+            file_path_tree_2 = os.path.join(folder_path, 'tree_2-log.csv' )
+            csv_file_write(entire_data, new_grid_id_list, file_path_tree_2, new_area_list)
         
-        # write out a Geojson file
-        geojson_write(first_depth, new_grids_list, new_counts_list,
-                      os.path.join(folder_path, geojson_path), None, None, grid_ids, kd_tree_mode, flag_val = True)
-        print('Grid number after the 2nd k-d tree:', len(new_grids_list))
-        print('Count number after the 2nd k-d tree:', len(new_counts_list))
+            # write out a Geojson file
+            geojson_write(first_depth, new_grids_list, new_counts_list,
+                          os.path.join(folder_path, geojson_path), None, None, grid_ids, kd_tree_mode, flag_val = True)
+            print('Grid number after the 2nd k-d tree:', len(new_grids_list))
+            print('Count number after the 2nd k-d tree:', len(new_counts_list))
 if __name__ == "__main__":
     main()

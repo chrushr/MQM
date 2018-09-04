@@ -69,7 +69,7 @@ class kdTree:
         self.help_fun(input_tree, 0)
         return self.bb_collection
     # =====================================
-    def point_within_grid(self, ind, geo_coordinate, bb_coordinate, in_tmp_array, osmid):
+    def point_within_grid(self, ind, geo_coordinate, bb_coordinate, in_tmp_array, item_id, in_geo):
         if self.bb_collection[ind][3] == self.initial_bb[3] and self.bb_collection[ind][2] == self.initial_bb[2]:
             if (geo_coordinate[0] >= bb_coordinate[0] and geo_coordinate[0] <= bb_coordinate[2] and
                 geo_coordinate[1] >= bb_coordinate[1] and geo_coordinate[1] <= bb_coordinate[3]):
@@ -77,7 +77,7 @@ class kdTree:
                     in_tmp_array[ind] += 1
                 else:
                     self.histogram[ind] += 1
-                    self.gridid_collection[osmid] = ind + self.id_start
+                    self.gridid_collection[item_id + '-' + in_geo] = ind + self.id_start
         elif self.bb_collection[ind][3] == self.initial_bb[3] and self.bb_collection[ind][2] != self.initial_bb[2]:
             if (geo_coordinate[0] >= bb_coordinate[0] and geo_coordinate[0] < bb_coordinate[2] and
                 geo_coordinate[1] >= bb_coordinate[1] and geo_coordinate[1] <= bb_coordinate[3]):
@@ -85,7 +85,7 @@ class kdTree:
                     in_tmp_array[ind] += 1
                 else:
                     self.histogram[ind] += 1
-                    self.gridid_collection[osmid] = ind + self.id_start
+                    self.gridid_collection[item_id + '-' + in_geo] = ind + self.id_start
         elif self.bb_collection[ind][3] != self.initial_bb[3] and self.bb_collection[ind][2] == self.initial_bb[2]:
             if (geo_coordinate[0] >= bb_coordinate[0] and geo_coordinate[0] <= bb_coordinate[2] and
                 geo_coordinate[1] >= bb_coordinate[1] and geo_coordinate[1] < bb_coordinate[3]):
@@ -93,7 +93,7 @@ class kdTree:
                     in_tmp_array[ind] += 1
                 else:
                     self.histogram[ind] += 1
-                    self.gridid_collection[osmid] = ind + self.id_start
+                    self.gridid_collection[item_id + '-' + in_geo] = ind + self.id_start
         elif self.bb_collection[ind][3] != self.initial_bb[3] and self.bb_collection[ind][2] != self.initial_bb[2]:
             if (geo_coordinate[0] >= bb_coordinate[0] and geo_coordinate[0] < bb_coordinate[2] and
                 geo_coordinate[1] >= bb_coordinate[1] and geo_coordinate[1] < bb_coordinate[3]):
@@ -101,7 +101,7 @@ class kdTree:
                     in_tmp_array[ind] += 1
                 else:
                     self.histogram[ind] += 1
-                    self.gridid_collection[osmid] = ind + self.id_start
+                    self.gridid_collection[item_id + '-' + in_geo] = ind + self.id_start
     # =====================================
     # calculate the counts in every cell
     def object_count(self, geo_type, in_coordinates, itemid):
@@ -110,7 +110,7 @@ class kdTree:
             np_array = np.array(in_coordinates)
             # loop through all cells
             for ind in range(len(self.bb_collection)):
-                self.point_within_grid(ind, np_array, self.bb_collection[ind], None, itemid)
+                self.point_within_grid(ind, np_array, self.bb_collection[ind], None, itemid, geo_type)
         # ==================================
         elif geo_type == 'LineString':
             np_array = np.array(in_coordinates)
@@ -118,7 +118,7 @@ class kdTree:
             # loop through all cells
             for ind in range(len(self.bb_collection)):
                 for coordinate_ind in range(np_array.shape[0]):
-                    self.point_within_grid(ind, np_array[coordinate_ind, :], self.bb_collection[ind], tmp_array, None)
+                    self.point_within_grid(ind, np_array[coordinate_ind, :], self.bb_collection[ind], tmp_array, None, None)
             
             #print('temp :', tmp_array)
             tmp_grid_id_list = []
@@ -127,7 +127,7 @@ class kdTree:
                     self.histogram[ind2] += 1
                     tmp_grid_id_list.append(ind2 + self.id_start)                    
             #self.gridid_collection[itemid] = np.nonzero(tmp_array)[0] + self.id_start
-            self.gridid_collection[itemid] = tmp_grid_id_list
+            self.gridid_collection[itemid + '-' + geo_type] = tmp_grid_id_list
         # ==================================
     # =====================================
     # calculate the counts in every cell
