@@ -590,7 +590,7 @@ def main():
                     # stop condition
                     if len([x for x in new_counts_collec if x < max_count]) == len(new_counts_collec):
                         for small_ind in range(len(new_bb_collec)):
-                            grid_ids.append(gridid_start + small_ind)
+                            grid_ids.append(gridid_start + small_ind - len(new_bb_collec))
                             new_grids_list.append(new_bb_collec[small_ind])
                             new_counts_list.append(new_counts_collec[small_ind])
                         break
@@ -598,7 +598,7 @@ def main():
             # write out a csv file
             file_path_tree_2 = os.path.join(folder_path, 'tree_2-log.csv' )
             csv_file_write(entire_data, new_grid_id_list, file_path_tree_2, new_area_list)
-        
+            
             # write out a Geojson file
             geojson_write(first_depth, new_grids_list, new_counts_list,
                           os.path.join(folder_path, geojson_path), None, None, grid_ids, kd_tree_mode, flag_val = True)
