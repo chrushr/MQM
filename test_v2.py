@@ -194,13 +194,14 @@ def bounding_box_process(in_folder_path):
             # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
             if data['features'][0]['geometry']['type'] == 'GeometryCollection':
                 # iterates through all elements in "geometries" and find the bounding box
-                bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
-                                                            data['features'][0]['properties']['feature_properties'],
-                                                            int_array[0], f)
-                # ==============================
-                #for element in geometry_collec:
-                #    output_data.append(element)
-                output_data = output_data + geometry_collec
+                if len(data['features'][0]['geometry']['geometries']) != 0:
+                    bounding_box, geometry_collec = unwrap_func(data['features'][0]['geometry']['geometries'],
+                                                                data['features'][0]['properties']['feature_properties'],
+                                                                int_array[0], f)
+                    # ==============================
+                    #for element in geometry_collec:
+                    #    output_data.append(element)
+                    output_data = output_data + geometry_collec
                 # ==============================
             else:
                 # discard a feature without its feature property
@@ -218,15 +219,15 @@ def bounding_box_process(in_folder_path):
                 # find a bounding box given a set of coordinates
                 # determine whether or not the input type is geometrycollection. If so, invoke an unwrap function
                 if data['features'][index]['geometry']['type'] == 'GeometryCollection':
-
-                    # iterates through all elements in "geometries" and find the bounding box
-                    tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
-                                                                        data['features'][index]['properties']['feature_properties'],
-                                                                        int_array[index], f)
-                    # ==============================
-                    #for element in tmp_geometry_collec:
-                    #    output_data.append(element)
-                    output_data = output_data + tmp_geometry_collec
+                    if len(data['features'][index]['geometry']['geometries']) != 0:
+                        # iterates through all elements in "geometries" and find the bounding box
+                        tmp_bounding_box, tmp_geometry_collec = unwrap_func(data['features'][index]['geometry']['geometries'],
+                                                                            data['features'][index]['properties']['feature_properties'],
+                                                                            int_array[index], f)
+                        # ==============================
+                        #for element in tmp_geometry_collec:
+                        #    output_data.append(element)
+                        output_data = output_data + tmp_geometry_collec
                     # ==============================
                 else:
                     # discard a feature without its feature property
