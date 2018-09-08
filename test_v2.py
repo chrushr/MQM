@@ -317,6 +317,7 @@ def cell_size_computation(depth_val, bounding_box_collec):
 # Create a table and save it as a csv file
 def csv_file_write(in_data, in_grid_collec_list, in_path, area_list):
     out_list = []
+    out_list.append(['grid_id', 'atlas_id', 'osm_id', 'flag_id', 'check_name', 'area_sqkm'])
     if len(in_grid_collec_list) == 1:
         for index in range(len(in_data)):
             if in_data[index][0] == 'Point' and in_data[index][4] + '-' + in_data[index][0] in in_grid_collec_list[0]:
