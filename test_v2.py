@@ -4,6 +4,7 @@ import sys, os, csv
 from kd_tree_v2 import kdTree
 from probdist_v2 import probability_distribution
 from area import area
+import pandas as pd
 #from unbal_kd_tree import unBalKdTree
 
 def update_function(old_value, new_value, flag):
@@ -458,8 +459,13 @@ def main():
                     grid_area = round(grid_area * 1e-6, 2)
                     # write out a csv file
                     file_path = os.path.join(folder_path, 'tree_1-log.csv')
-                    #print(gridid_collec)
                     csv_file_write(entire_data, [gridid_collec], file_path, [grid_area])
+
+                    # SQL-like Query
+                    sotm = pd.read_csv(file_path)
+                    final_df = sotm.groupby('grid_id').agg({'atlas_id':'nunique', 'osm_id':'nunique', 'flag_id':'nunique', 'check_name':'nunique'})
+                    final_df.to_csv(os.path.join(folder_path, 'tree_1-log_join_results.csv'), sep = ',', index ='grid_id')
+                    
                     # write out a Geojson file
                     geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area,
                                   None, kd_tree_mode, flag_val = True)
@@ -549,6 +555,12 @@ def main():
                     # write out a csv file
                     file_path = os.path.join(folder_path, 'tree_1-log.csv' )
                     csv_file_write(entire_data, [gridid_collec], file_path, [grid_area])
+
+                    # SQL-like Query
+                    sotm = pd.read_csv(file_path)
+                    final_df = sotm.groupby('grid_id').agg({'atlas_id':'nunique', 'osm_id':'nunique', 'flag_id':'nunique', 'check_name':'nunique'})
+                    final_df.to_csv(os.path.join(folder_path, 'tree_1-log_join_results.csv'), sep = ',', index ='grid_id')
+                    
                     # write out a Geojson file
                     geojson_write(depth_count, bb_collec, counts_collec, os.path.join(folder_path, geojson_path), cell_num, initial_area,
                                   None, kd_tree_mode = 'tree_v1', flag_val = True)
@@ -600,6 +612,11 @@ def main():
             # write out a csv file
             file_path_tree_2 = os.path.join(folder_path, 'tree_2-log.csv' )
             csv_file_write(entire_data, new_grid_id_list, file_path_tree_2, new_area_list)
+
+            # SQL-like Query
+            sotm = pd.read_csv(file_path_tree_2)
+            final_df = sotm.groupby('grid_id').agg({'atlas_id':'nunique', 'osm_id':'nunique', 'flag_id':'nunique', 'check_name':'nunique'})
+            final_df.to_csv(os.path.join(folder_path, 'tree_2-log_join_results.csv'), sep = ',', index ='grid_id')
             
             # write out a Geojson file
             geojson_write(first_depth, new_grids_list, new_counts_list,
