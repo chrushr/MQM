@@ -172,7 +172,8 @@ def bounding_box_process(in_folder_path):
     output_data = []
     bounding_box_set = []
     bounding_box = None
-
+    name_num_list = []
+    name_num_list.append(['Check_name', 'Counts'])
     start_point = 0
     end_point = 0
     
@@ -182,6 +183,10 @@ def bounding_box_process(in_folder_path):
         
         # load the Geo-json file and ignore other files
         if os.path.splitext(os.path.join(in_folder_path, f))[1] == '.geojson':
+            #print('name:', os.path.splitext(f)[0])
+            if len(os.path.splitext(f)[0].split('-')) == 3:
+                name_num_list.append([os.path.splitext(f)[0].split('-')[0], int(os.path.splitext(f)[0].split('-')[2])])
+            
             # open geojson files
             with open(os.path.join(in_folder_path, f), encoding='utf-8') as new_f:
                 data = json.load(new_f)
@@ -248,7 +253,7 @@ def bounding_box_process(in_folder_path):
             # update start point
             start_point = len(data['features'])
     
-    return output_data, bounding_box_set
+    return output_data, bounding_box_set, name_num_list
 # =======================================
 # Write out geojson file
 # Polygon Format:
@@ -358,8 +363,13 @@ def main():
     
     # find an initial bounding box given all geometries
     final_BB = None
-    entire_data, out_BB = bounding_box_process(file_path)
+    entire_data, out_BB, out_name_num = bounding_box_process(file_path)
     
+    # save the 2d list as a file
+    with open(os.path.join(folder_path, os.path.basename(file_path) + '.csv' )  , "w") as out_f:
+        writer = csv.writer(out_f)
+        writer.writerows(out_name_num)
+        
     if len(out_BB) == 1:
         final_BB = out_BB[0]
     else:
