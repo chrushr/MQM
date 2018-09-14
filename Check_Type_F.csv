@@ -1,0 +1,17 @@
+Check_Name,Type
+BuildingRoadIntersectionCheck,Road Connection
+DuplicateWaysCheck,Road Connection
+EdgeCrossingEdgeCheck,Road Connection
+FloatingEdgeCheck,Road Connection
+InvalidAccessTagCheck,Road Tag
+InvalidTurnRestrictionCheck,Road Relation
+InvalidMiniRoundaboutCheck,Roundabout
+MalformedRoundaboutCheck,Roundabout
+RoundaboutClosedLoopCheck,Roundabout
+RoundaboutValenceCheck,Roundabout
+SharpAngleCheck,Road Connection
+SignPostCheck,Road Tag
+SinkIslandCheck,Road Connection
+SnakeRoadCheck,Road Tag
+StreetNameIntegersOnlyCheck,Road Tag
+UnusualLayerTagCheck,Road Tag
