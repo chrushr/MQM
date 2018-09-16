@@ -5,6 +5,7 @@ from kd_tree_v2 import kdTree
 from probdist_v2 import probability_distribution
 from area import area
 import pandas as pd
+import argparse
 #from unbal_kd_tree import unBalKdTree
 
 def update_function(old_value, new_value, flag):
@@ -151,20 +152,6 @@ def unwrap_func(geometries_list, ids_list, flag, file_name):
 #    for elem_ind in range(len(point_array)):
 #        point_list.append([tmp_storage_list[point_array[elem_ind]][0], tmp_storage_list[point_array[elem_ind]][1], flag, -1])
 
-    
-    #print(ids_list)
-    #print(ids_list[0]['osmid'])
-    #print(ids_list[1]['osmid'])
-    #print(len(ids_list))
-    #print(len(geometries_list[0]['coordinates']))
-    #print(geometries_list[0]['type'])
-    #print(len(geometries_list[0]['coordinates']))
-    #print(properties_list)
-    #out_list.append([geometries_list[0]['type'], geometries_list[0]['coordinates']])
-    #for line_ind in range(len(geometries_list[0]['coordinates'])):
-    #out_list.append(['LineString', geometries_list[0]['coordinates'][line_ind], flag, ids_list[line_ind]['osmid']])
-    
-#    return tmp, line_list + point_list
     return tmp, tmp_storage_list
 # =======================================
 # Find min_X, max_X, min_Y, and max_Y given a Geo-json file or multiple files
@@ -176,10 +163,20 @@ def bounding_box_process(in_folder_path):
     name_num_list.append(['Check_name', 'Counts'])
     start_point = 0
     end_point = 0
+    roadFile = ''
     
     # loop through all geojson files
     for f in os.listdir(in_folder_path):
         #print('File Name:', os.path.join(in_folder_path, f))
+
+        if os.path.isdir(os.path.join(in_folder_path, f)):
+            for subdir, dirs, files in os.walk(os.path.join(in_folder_path, f)):
+                for file in files:
+                    filepath = subdir + os.sep + file
+
+                    if filepath.endswith('.geojson'):
+                        roadFile = filepath
+                        #print (roadFile)
         
         # load the Geo-json file and ignore other files
         if os.path.splitext(os.path.join(in_folder_path, f))[1] == '.geojson':
@@ -253,7 +250,7 @@ def bounding_box_process(in_folder_path):
             # update start point
             start_point = len(data['features'])
     
-    return output_data, bounding_box_set, name_num_list
+    return output_data, bounding_box_set, name_num_list, roadFile
 # =======================================
 # Write out geojson file
 # Polygon Format:
@@ -349,21 +346,91 @@ def csv_file_write(in_data, in_grid_collec_list, in_path, area_list):
         writer = csv.writer(out_f)
         writer.writerows(out_list)
 # =======================================
+# Road counts
+def road_count(in_road, in_grids, in_counts, out_folder, initial_bb):
+    road_data = []
+    road_counts_his = np.zeros(len(in_grids), dtype=int)
+    # load the Geo-json file and ignore other files
+    if os.path.splitext(in_road)[1] == '.geojson':
+        # open geojson files
+        with open(in_road, encoding='utf-8') as new_f:
+            in_data = json.load(new_f)
+        
+        # process all geometries excluding the 1st one
+        for index in range(len(in_data['features'])):
+            # discard a feature without its feature property
+            if len(in_data['features'][index]['properties']) != 0:
+                road_data.append([in_data['features'][index]['geometry']['type'], in_data['features'][index]['geometry']['coordinates']])
+
+        # calculate the number of counts within a grid giving the road data
+        for index2 in range(len(road_data)):
+            if road_data[index2][0] == 'LineString':
+                np_array = np.array(road_data[index2][1])
+                tmp_array = np.zeros(len(in_grids))
+
+                # iterate through all grids
+                for ind in range(len(in_grids)):
+                    for coordinate_ind in range(np_array.shape[0]):
+                        if in_grids[ind][3] == initial_bb[3] and in_grids[ind][2] == initial_bb[2]:
+                            if (np_array[coordinate_ind, :][0] >= in_grids[ind][0] and np_array[coordinate_ind, :][0] <= in_grids[ind][2] and
+                                np_array[coordinate_ind, :][1] >= in_grids[ind][1] and np_array[coordinate_ind, :][1] <= in_grids[ind][3]):
+                                tmp_array[ind] += 1
+                        elif in_grids[ind][3] == initial_bb[3] and in_grids[ind][2] != initial_bb[2]:
+                            if (np_array[coordinate_ind, :][0] >= in_grids[ind][0] and np_array[coordinate_ind, :][0] < in_grids[ind][2] and
+                                np_array[coordinate_ind, :][1] >= in_grids[ind][1] and np_array[coordinate_ind, :][1] <= in_grids[ind][3]):
+                                tmp_array[ind] += 1
+                        elif in_grids[ind][3] != initial_bb[3] and in_grids[ind][2] == initial_bb[2]:
+                            if (np_array[coordinate_ind, :][0] >= in_grids[ind][0] and np_array[coordinate_ind, :][0] <= in_grids[ind][2] and
+                                np_array[coordinate_ind, :][1] >= in_grids[ind][1] and np_array[coordinate_ind, :][1] < in_grids[ind][3]):
+                                tmp_array[ind] += 1
+                        elif in_grids[ind][3] != initial_bb[3] and in_grids[ind][2] != initial_bb[2]:
+                            if (np_array[coordinate_ind, :][0] >= in_grids[ind][0] and np_array[coordinate_ind, :][0] < in_grids[ind][2] and
+                                np_array[coordinate_ind, :][1] >= in_grids[ind][1] and np_array[coordinate_ind, :][1] < in_grids[ind][3]):
+                                tmp_array[ind] += 1
+                
+                #print('temp :', tmp_array)
+                for ind2 in range(len(in_grids)):
+                    if tmp_array[ind2] > 0:
+                        road_counts_his[ind2] += 1
+        # ==========================================
+        # write out a csv file
+        csv_matrix = []
+        csv_matrix.append(['grid_id', 'err_roads', 'road_counts'])
+        for index in range(len(in_grids)):
+            csv_matrix.append([index + 1, in_counts[index], road_counts_his[index]])
+            
+        with open(os.path.join(out_folder, 'road-' + os.path.basename(out_folder) + '.csv'), "w") as out_f:
+            writer = csv.writer(out_f)
+            writer.writerows(csv_matrix)
+# =======================================
 # The main function
 def main():
     # declare variables
-    kd_tree_mode = sys.argv[1]
-    file_path = sys.argv[2]
-    maximum_level = sys.argv[3]
-    folder_path = sys.argv[4]
-    count_num = int(sys.argv[5])
+    # declare arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--kdTreeMode', type = str, default='', help='choose either single k-d tree or multiple k-d trees')
+    parser.add_argument('--folderPath', type = str, default='', help='path to an input folder')
+    parser.add_argument('--maxDepth', type = str, default='10', help='max depth of a k-d tree')
+    parser.add_argument('--outFolder', type = str, default='', help='path to an ouput folder')
+    parser.add_argument('--countNum', type = int, default=10, help='a count value')
+    parser.add_argument('--gridPercent', type = float, default=0.9, help='a grid percentage')
+    parser.add_argument('--maxCount', type = int, default=100, help='maximum count to the second k-d tree')
+    
+    args = parser.parse_args()
+    kd_tree_mode = args.kdTreeMode
+    file_path = args.folderPath
+    maximum_level = args.maxDepth
+    folder_path = args.outFolder
+    count_num = args.countNum
+    grid_percent = args.gridPercent
+    
     grid_percent = 0.0
     max_count = 0
     flag_val = False
     
     # find an initial bounding box given all geometries
     final_BB = None
-    entire_data, out_BB, out_name_num = bounding_box_process(file_path)
+    entire_data, out_BB, out_name_num, road_file = bounding_box_process(file_path)
     
     # save the 2d list as a file
     with open(os.path.join(folder_path, os.path.basename(file_path) + '.csv' )  , "w") as out_f:
@@ -406,8 +473,6 @@ def main():
 
     # choose the k-d tree model
     if kd_tree_mode == 'tree_v1':
-        grid_percent = float(sys.argv[6])
-        
         for depth_count in range(1, int(maximum_level) + 1):
             # build k-d tree
             tree_cons = kdTree(depth_count, final_BB, entire_data, 1)
@@ -479,6 +544,9 @@ def main():
                     # write out a Geojson file
                     geojson_write(depth_count, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area,
                                   None, kd_tree_mode, flag_val = True)
+                    # road counts
+                    if road_file:
+                        road_count(road_file, bb_collec, hist, folder_path, final_BB)
                     break
     # ===============================
     elif kd_tree_mode == 'tree_v2':
@@ -502,8 +570,8 @@ def main():
         geojson_write(maximum_level, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val)
     # ===============================
     elif kd_tree_mode == 'cascade-kdtree':
-        grid_percent = float(sys.argv[6])
-        max_count = int(sys.argv[7])
+        max_count = args.maxCount
+        
         optimal_count_list = None
         optimal_grid_size_list = None
         first_depth = 0
@@ -578,6 +646,10 @@ def main():
 
                     optimal_count_list = counts_collec
                     first_depth = depth_count
+
+                    # road counts
+                    if road_file:
+                        road_count(road_file, bb_collec, counts_collec, folder_path, final_BB)
                     break
         # ======================================
         

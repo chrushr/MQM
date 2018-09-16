@@ -55,18 +55,26 @@ if [ -d "$FOLDER_PATH" ]; then
         fi
 
         if [[ $kdTree_chose == "tree_v1" ]]; then
-            python3 test_v2.py $kdTree_chose "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM $GRID_PERCENT
+            python3 test_v2.py --kdTreeMode $kdTree_chose \
+                               --folderPath "$FOLDER_PATH/$i" \
+                               --maxDepth $LEVEL \
+                               --outFolder "$PWD/result/$i" \
+                               --countNum $COUNT_NUM \
+                               --gridPercent $GRID_PERCENT
         elif [[ $kdTree_chose == "tree_v2" ]]; then
             python3 test_v2.py $kdTree_chose "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM
         elif [[ $kdTree_chose == "cascade-kdtree" ]]; then
-            python3 test_v2.py $kdTree_chose "$FOLDER_PATH/$i" $LEVEL "$PWD/result/$i" $COUNT_NUM $GRID_PERCENT $MAX_COUNT
+            python3 test_v2.py --kdTreeMode $kdTree_chose \
+                               --folderPath "$FOLDER_PATH/$i" \
+                               --maxDepth $LEVEL \
+                               --outFolder "$PWD/result/$i" \
+                               --countNum $COUNT_NUM \
+                               --gridPercent $GRID_PERCENT \
+                               --maxCount $MAX_COUNT
         fi
     done
 else
     echo "The $1 does not exist !!"
 fi
-
-
-
 
 
