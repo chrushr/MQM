@@ -348,7 +348,7 @@ def csv_file_write(in_data, in_grid_collec_list, in_path, area_list):
 # Road counts
 def road_count(in_road, in_grids, in_counts, out_folder, initial_bb):
     road_data = []
-    road_counts_his = np.zeros(len(in_grids), dtype=int)
+    road_counts_his = np.zeros(len(in_grids))
     # load the Geo-json file and ignore other files
     if os.path.splitext(in_road)[1] == '.geojson':
         # open geojson files
