@@ -168,7 +168,7 @@ def bounding_box_process(in_folder_path):
     # loop through all geojson files
     for f in os.listdir(in_folder_path):
         #print('File Name:', os.path.join(in_folder_path, f))
-
+        # ==========================================
         if os.path.isdir(os.path.join(in_folder_path, f)):
             for subdir, dirs, files in os.walk(os.path.join(in_folder_path, f)):
                 for file in files:
@@ -176,8 +176,7 @@ def bounding_box_process(in_folder_path):
 
                     if filepath.endswith('.geojson'):
                         roadFile = filepath
-                        #print (roadFile)
-        
+        # ==========================================
         # load the Geo-json file and ignore other files
         if os.path.splitext(os.path.join(in_folder_path, f))[1] == '.geojson':
             #print('name:', os.path.splitext(f)[0])
@@ -410,21 +409,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--kdTreeMode', type = str, default='', help='choose either single k-d tree or multiple k-d trees')
     parser.add_argument('--folderPath', type = str, default='', help='path to an input folder')
-    parser.add_argument('--maxDepth', type = str, default='10', help='max depth of a k-d tree')
+    parser.add_argument('--maxDepth', type = str, default='', help='max depth of a k-d tree')
     parser.add_argument('--outFolder', type = str, default='', help='path to an ouput folder')
-    parser.add_argument('--countNum', type = int, default=10, help='a count value')
-    parser.add_argument('--gridPercent', type = float, default=0.9, help='a grid percentage')
-    parser.add_argument('--maxCount', type = int, default=100, help='maximum count to the second k-d tree')
+    parser.add_argument('--countNum', type = str, default='', help='a count value')
+    parser.add_argument('--gridPercent', type = str, default='', help='a grid percentage')
+    parser.add_argument('--maxCount', type = str, default='', help='maximum count to the second k-d tree')
     
     args = parser.parse_args()
     kd_tree_mode = args.kdTreeMode
     file_path = args.folderPath
     maximum_level = args.maxDepth
     folder_path = args.outFolder
-    count_num = args.countNum
-    grid_percent = args.gridPercent
+    count_num = int(args.countNum)
+    grid_percent = float(args.gridPercent)
     
-    grid_percent = 0.0
     max_count = 0
     flag_val = False
     
@@ -570,7 +568,7 @@ def main():
         geojson_write(maximum_level, bb_collec, hist, os.path.join(folder_path, geojson_path), cell_num, initial_area, kd_tree_mode, flag_val)
     # ===============================
     elif kd_tree_mode == 'cascade-kdtree':
-        max_count = args.maxCount
+        max_count = int(args.maxCount)
         
         optimal_count_list = None
         optimal_grid_size_list = None
