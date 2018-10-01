@@ -12,20 +12,30 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 **To run the program successifully, please follow steps:** <br />
 1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
 
-2. change a permission of the **test_script.sh** file by using command `chmod +x test_script.sh`. <br />
+2. change a permission of the **test_script_v2.sh** file by using command `chmod +x test_script_v2.sh`. <br />
 
-3. run the program through applying <br />
+3. run the program: <br />
+3.1: To use a vanilla k-d tree (only one k-d tree), please run Command 1: <br />
+3.2: To use a cascade approach (two k-d trees), please execute Command 2:
 
 ```
-./test_script.sh [name of the arbitrary directory] [a level number]
+Command 1:
+./test_script_v2.sh tree_v1 [name of the arbitrary directory] [maximum depth] [count number] [percentage value]
 
 For example:
-./test_script.sh test_data 3
+./test_script_v2.sh tree_v1 test_data 10 10 0.9
+```
+
+```
+Command 2:
+./test_script_v2.sh cascade-kdtree [name of the arbitrary directory] [maximum depth] [count number (1st k-d tree) ] [percentage value] [maximum count (2nd k-d tree)]
+
+For example:
+./test_script_v2.sh cascade-kdtree test_data 10 10 0.9 100
 ```
 
 Note: <br />
-Users can adjust the second and last parameter, and minimum value of the level number is 0. <br />
-Value 0 represents that tree depth of a k-d tree is 1. <br />
+Users can adjust all parameters for both commands, and minimum value of the depth number is 1. <br />
 
 **Output Format:** <br />
 The output format of this program is also a geojson format that includes coordinates of all grids <br />
