@@ -5,7 +5,6 @@ from kd_tree import kdTree
 from utility import Utility
 import argparse
 import ast
-#import pandas as pd
 
 # Road counts
 def road_count(in_road, in_grids, in_counts, out_folder, initial_bb):
@@ -82,10 +81,10 @@ def main():
     geojson_path = 'geojson'
     
     if not os.path.exists(os.path.join(folder_path, path)):
-        print('Create the histogram directory !!')
+        sys.stderr.write('Create the histogram directory !! \n')
         os.makedirs(os.path.join(folder_path, path))
     if not os.path.exists(os.path.join(folder_path, geojson_path)):
-        print('Create the geojson directory !!')
+        sys.stderr.write('Create the geojson directory !! \n')
         os.makedirs(os.path.join(folder_path, geojson_path))
     
     max_count = 0
