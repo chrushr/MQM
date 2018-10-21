@@ -52,16 +52,13 @@ def road_count(in_road, in_grids, in_counts, out_folder, initial_bb):
                     if tmp_array[ind2] > 0:
                         road_counts_his[ind2] += 1
         # ==========================================
-        # write out a csv file
         csv_matrix = []
         csv_matrix.append(['grid_id', 'err_roads', 'road_counts'])
         for index in range(len(in_grids)):
             csv_matrix.append([index + 1, in_counts[index], road_counts_his[index]])
-            
-        with open(os.path.join(out_folder, 'road-' + os.path.basename(out_folder) + '.csv'), "w") as out_f:
-            writer = csv.writer(out_f)
-            writer.writerows(csv_matrix)
-
+        # write out a csv file
+        util = Utility()
+        util.csv_writer(csv_matrix, os.path.join(out_folder, 'road-' + os.path.basename(out_folder) + '.csv'))
 # =======================================
 def get_argument():
     # declare arguments and variables
@@ -73,12 +70,13 @@ def get_argument():
     parser.add_argument('--outFolder', type = str, default='', help='path to an ouput folder')
     args = parser.parse_args()
     max_count = -1
+    path = 'histogram'
+    geojson_path = 'geojson'
     
     if args.maxCount:
         max_count = int(args.maxCount)
     
-    return args.maxDepth, args.outFolder, int(args.countNum), float(args.gridPercent), max_count
-
+    return args.maxDepth, args.outFolder, int(args.countNum), float(args.gridPercent), max_count, path, geojson_path
 # =======================================
 def stop_condition(count_zero_list, count_list, grid_percent, count_num, cell_num, out_distribution):
     # varialbes
@@ -133,58 +131,55 @@ def extend_partition(depth_count, input_bounding_box, input_data, startId):
 
     return bounding_box_collection, count_list, gridid_collec
 # =======================================
-def main():
-    # get all arguments and initialize variables
-    maximum_level, folder_path, count_num, grid_percent, max_count = get_argument()
-    flag_val = False
-    input_data = None
-    
-    path = 'histogram'
-    geojson_path = 'geojson'
-    
+def directory_creation(folder_path, path, geojson_path):
     if not os.path.exists(os.path.join(folder_path, path)):
         sys.stderr.write('Create the histogram directory !! \n')
         os.makedirs(os.path.join(folder_path, path))
     if not os.path.exists(os.path.join(folder_path, geojson_path)):
         sys.stderr.write('Create the geojson directory !! \n')
         os.makedirs(os.path.join(folder_path, geojson_path))
+# =======================================
+def main():
+    # get all arguments and initialize variables
+    maximum_level, folder_path, count_num, grid_percent, max_count, path, geojson_path = get_argument()
+    flag_val = False
+    input_data = None
+    
+    directory_creation(folder_path, path, geojson_path)
     
     # read the entire data from standard input
     for line in sys.stdin.readlines():
         input_data = ast.literal_eval(line)
     
-    # save the 2d list as a file
-    with open(os.path.join(folder_path, os.path.basename(input_data['inFolder']) + '.csv' )  , "w") as out_f:
-        writer = csv.writer(out_f)
-        writer.writerows(input_data['nameNum'])
+    util = Utility()
+    util.csv_writer(input_data['nameNum'], os.path.join(folder_path, os.path.basename(input_data['inFolder']) + '.csv' ))
+    del util
     
     # perform the 1st k-d tree
     for depth_count in range(1, int(maximum_level) + 1):
         bb_collec, hist, _ = extend_partition(depth_count, input_data['iniBb'], input_data['data'], 1)
 
-        util = Utility(hist)
+        # calculate areas
+        grid_area = input_data['iniArea'] / (2**(depth_count))
+        grid_area = round(grid_area * 1e-6, 2)
+
+        util = Utility()
         filename = os.path.join(os.path.join(folder_path, path), 'level-' + str(depth_count) + '.png')
         # probability distribution
-        out_distribution, count_list, count_zero_list, cell_num = util.distribution_computation(filename)
+        out_distribution, count_list, count_zero_list, cell_num = util.distribution_computation(filename, hist)
         # write out a Geojson file
-        util.geojson_write(depth_count, bb_collec, os.path.join(folder_path, geojson_path), cell_num, input_data['iniArea'], None, 'tree_v1', flag_val)
-        del util
+        util.geojson_write(depth_count, bb_collec, os.path.join(folder_path, geojson_path), cell_num, grid_area, None, 'tree_v1', hist, flag_val)
         
         # stop condition (the over 90% (parameter) of cells is less than 10 (parameter) (the count value))
         if stop_condition(count_zero_list, count_list, grid_percent, count_num, cell_num, out_distribution):
-            # calculate areas
-            grid_area = input_data['iniArea'] / (2**(depth_count))
-            grid_area = round(grid_area * 1e-6, 2)
-
-            util = Utility(hist)
             # wirte out one row
             util.summary_table_row_generation(input_data['data'], input_data['nameNum'], round(input_data['iniArea'] * 1e-6, 2), grid_area)
 
             # write out a Geojson file
-            util.geojson_write(depth_count, bb_collec, os.path.join(folder_path, geojson_path), cell_num, input_data['iniArea'],
-                               None, 'tree_v1', flag_val = True)
+            util.geojson_write(depth_count, bb_collec, os.path.join(folder_path, geojson_path), cell_num, grid_area,
+                               None, 'tree_v1', hist, flag_val = True)
             del util
-
+            
             # ====================================
             # perform the 2nd k-d tree
             if max_count != -1:                
@@ -220,10 +215,10 @@ def main():
                                     new_counts_list.append(new_counts_collec[small_ind])
                                 break
                     # ==============================
-                    util = Utility(new_counts_list)
+                    util = Utility()
                     # write out a Geojson file
                     util.geojson_write(depth_count, new_grids_list,
-                                       os.path.join(folder_path, geojson_path), None, None, grid_ids, 'cascade-kdtree', flag_val = True)
+                                       os.path.join(folder_path, geojson_path), None, None, grid_ids, 'cascade-kdtree', new_counts_collec, flag_val = True)
                     del util
             # ====================================
             # road counts
