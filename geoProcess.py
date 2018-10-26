@@ -98,10 +98,11 @@ def bounding_box_process(in_folder_path):
     roadFile = ''
     
     # check whether or not a road file exists in a sub-directory
-    sub_folders = filter(lambda x: os.path.isdir(x), os.listdir(in_folder_path))
-    try:
-        roadFile = [f for f in os.listdir(os.path.join(in_folder_path, sub_folders[0])) if f.endswith('.geojson')][0]
-    except TypeError:
+    sub_folder = [sub_folder for sub_folder in os.listdir(in_folder_path) if os.path.isdir(os.path.join(in_folder_path, sub_folder))]
+    if sub_folder:
+        road_file_name = [f for f in os.listdir(os.path.join(in_folder_path, sub_folder[0])) if f.endswith('.geojson')][0]
+        roadFile = os.path.join(os.path.join(in_folder_path, sub_folder[0]), road_file_name)
+    else:
         roadFile = ''
     
     # loop through all geojson files
