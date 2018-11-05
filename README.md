@@ -15,7 +15,6 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 2. run the program through applying <br />
 
 ```
-./test_script.sh [name of the arbitrary directory] [a level number]
 python3 mqm_tool.py --folderPath [a absolute folder path] --maxDepth [maximum tree depth (default = 10)]
 --countNum [a count number (default = 10)] --gridPercent [a grid percentage (default = 0.9)]
 --maxCount [maximum count to the second k-d tree]
