@@ -20,7 +20,7 @@ python3 mqm_tool.py --folderPath [a absolute folder path] --maxDepth [maximum tr
 --maxCount [maximum count to the second k-d tree]
 
 For example:
-python3 mqm_tool.py --folderPath ~/test_data 
+python3 mqm_tool.py --folderPath ~/desktop/program/test_data 
 ```
 
 Note: <br />
