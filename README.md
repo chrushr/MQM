@@ -16,16 +16,17 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 
 ```
 ./test_script.sh [name of the arbitrary directory] [a level number]
-python3 mqm_tool.py --folderPath [a absolute folder path] --maxDepth [maximum tree depth (default = 10)] <br />
---countNum [a count number (default = 10)] --gridPercent [a grid percentage (default = 0.9)] <br />
+python3 mqm_tool.py --folderPath [a absolute folder path] --maxDepth [maximum tree depth (default = 10)]
+--countNum [a count number (default = 10)] --gridPercent [a grid percentage (default = 0.9)]
 --maxCount [maximum count to the second k-d tree]
 
 For example:
-./test_script.sh test_data 3
+python3 mqm_tool.py --folderPath ~/test_data 
 ```
 
 Note: <br />
-Users can adjust all parameters, and minimum value of the depth number is 1.<br />
+1. Users can adjust all parameters, and minimum value of the depth number is 1.<br />
+2. When users specify the maximum count to the second k-d tree, the tool performs the second tree automatically. <br />
 
 **Output Format:** <br />
 The output format of this program is also a geojson format that includes coordinates of all grids <br />
