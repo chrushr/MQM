@@ -9,23 +9,23 @@ OpenStreetMap (OSM) data quality is always a concern and frequently a barrier fo
 3. Python3
 4. area (link: https://github.com/scisco/area)
 
-**To run the program successifully, please follow steps:** <br />
-1. create an arbitrary directory storing all sub-directories in the working directory, and put all input sub-directories into it. <br />
+**To run the program successfully, please follow steps:** <br />
+1. create an arbitrary directory storing all sub-directories, and put all input sub-directories into it. <br />
 
-2. change a permission of the **test_script.sh** file by using command `chmod +x test_script.sh`. <br />
-
-3. run the program through applying <br />
+2. run the program through applying <br />
 
 ```
 ./test_script.sh [name of the arbitrary directory] [a level number]
+python3 mqm_tool.py --folderPath [a absolute folder path] --maxDepth [maximum tree depth (default = 10)] <br />
+--countNum [a count number (default = 10)] --gridPercent [a grid percentage (default = 0.9)] <br />
+--maxCount [maximum count to the second k-d tree]
 
 For example:
 ./test_script.sh test_data 3
 ```
 
 Note: <br />
-Users can adjust the second and last parameter, and minimum value of the level number is 0. <br />
-Value 0 represents that tree depth of a k-d tree is 1. <br />
+Users can adjust all parameters, and minimum value of the depth number is 1.<br />
 
 **Output Format:** <br />
 The output format of this program is also a geojson format that includes coordinates of all grids <br />
