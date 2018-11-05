@@ -4,6 +4,7 @@ import os, csv, sys
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import jenkspy
 
 class Utility:
     def __init__(self):
@@ -53,6 +54,13 @@ class Utility:
         json_dic = {}
         feature_list = []
         json_dic['type'] = 'FeatureCollection'
+        threshold1 = 0
+        threshold2 = 0
+
+        if len(input_counts) > 2:
+            breaks = jenkspy.jenks_breaks(input_counts, nb_class=3)
+            threshold1 = breaks[1]
+            threshold2 = breaks[2]
 
         # add all cells and counts into the feature list
         for index in range(len(input_counts)):
@@ -60,12 +68,20 @@ class Utility:
             geometry_dic = {}
             properties_dic = {}
             geometry_dic['type'] = 'Polygon'
-            geometry_dic['coordinates'] = [[ [bounding_box_collec[index][0],bounding_box_collec[index][1]],
+            geometry_dic['coordinates'] = [[[bounding_box_collec[index][0],bounding_box_collec[index][1]],
                                          [bounding_box_collec[index][0],bounding_box_collec[index][3]],
                                          [bounding_box_collec[index][2],bounding_box_collec[index][3]],
-                                         [bounding_box_collec[index][2],bounding_box_collec[index][1]] ]]
+                                         [bounding_box_collec[index][2],bounding_box_collec[index][1]]]]
         
             properties_dic['counts'] = input_counts[index]
+
+            if properties_dic['counts'] <= threshold1:
+                properties_dic['color'] = '#ffffb2'
+            elif properties_dic['counts'] <= threshold2:
+                properties_dic['color'] = '#fd8d3c'
+            else:
+                properties_dic['color'] = '#bd0026'
+
             if flag_val:
                 if in_grid_ids is None:
                     properties_dic['gridId'] = index + 1
